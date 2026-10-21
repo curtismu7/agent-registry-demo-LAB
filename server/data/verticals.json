@@ -1,0 +1,59 @@
+[
+  {
+    "id": "travel",
+    "name": "Travel",
+    "cast": {
+      "custodian": "Mark",
+      "agent": "travel-agent",
+      "agent_next": "travel-agent-v2",
+      "agent_label": "Travel Agent",
+      "app": "flights-mcp",
+      "other_app": "loyalty-mcp",
+      "tool": "search_flights",
+      "provider": "anthropic",
+      "model": "mock-model-small",
+      "model_other": "mock-model-large",
+      "issuer": "https://issuer.example.invalid/travel",
+      "audience": "https://gateway.example.invalid/flights-mcp/mcp",
+      "subject": "spiffe://travel.example.invalid/agents/travel-agent"
+    }
+  },
+  {
+    "id": "banking",
+    "name": "Banking",
+    "cast": {
+      "custodian": "Alice",
+      "agent": "payments-agent",
+      "agent_next": "payments-agent-v2",
+      "agent_label": "Payments Agent",
+      "app": "ledger-mcp",
+      "other_app": "cards-mcp",
+      "tool": "list_transactions",
+      "provider": "anthropic",
+      "model": "mock-model-small",
+      "model_other": "mock-model-large",
+      "issuer": "https://issuer.example.invalid/bank",
+      "audience": "https://gateway.example.invalid/ledger-mcp/mcp",
+      "subject": "spiffe://bank.example.invalid/agents/payments-agent"
+    }
+  },
+  {
+    "id": "retail",
+    "name": "Retail",
+    "cast": {
+      "custodian": "Priya",
+      "agent": "shopping-agent",
+      "agent_next": "shopping-agent-v2",
+      "agent_label": "Shopping Agent",
+      "app": "catalog-mcp",
+      "other_app": "orders-mcp",
+      "tool": "find_products",
+      "provider": "anthropic",
+      "model": "mock-model-small",
+      "model_other": "mock-model-large",
+      "issuer": "https://issuer.example.invalid/retail",
+      "audience": "https://gateway.example.invalid/catalog-mcp/mcp",
+      "subject": "spiffe://retail.example.invalid/agents/shopping-agent"
+    }
+  }
+]

@@ -1,0 +1,272 @@
+{
+  "schema": "demo-content-pack/1",
+  "id": "agent-registry-demo",
+  "title": "Agent Registry Lifecycle",
+  "version": "0.1.0",
+  "demo": {
+    "id": "agent-registry-demo",
+    "name": "Agent Registry Lifecycle",
+    "catalog": "D11",
+    "baseUrl": "http://localhost:5010",
+    "doctor": "/api/health",
+    "tags": [
+      "agent-registry",
+      "nhi",
+      "rotation",
+      "revocation",
+      "workload-identity",
+      "mock"
+    ]
+  },
+  "glossary": [
+    {
+      "id": "agent-key",
+      "term": "Agent access key",
+      "definition": "One credential that is the agent's whole identity in the registry: scopes, custodian, caps, expiry, guardrail and grants hang off it. The agent sends it as a Bearer token on every call. The VirtualKey is server-generated and cannot be edited.",
+      "aliases": [
+        "virtual key",
+        "non-human identity"
+      ]
+    },
+    {
+      "id": "custodian",
+      "term": "Custodian",
+      "definition": "The human an agent acts as and answers for. If the custodian's account goes inactive the key stops working, so pick someone who will stay."
+    },
+    {
+      "id": "grant",
+      "term": "Grant",
+      "definition": "A policy that lets a key reach one app, optionally only some tools. It references the key by NAME, not by its value."
+    },
+    {
+      "id": "rotate-by-replacement",
+      "term": "Rotate by replacement",
+      "definition": "There is no rotate endpoint. Snapshot the spec, create a successor under a new name, copy its grants, verify it with a call, then revoke the old key. A PUT carrying a new VirtualKey returns 200 and is ignored."
+    },
+    {
+      "id": "revoke",
+      "term": "Revoke",
+      "definition": "Revoked:true. The only non-destructive kill: the key, its caps and its grants stay, and the gateway answers 401 without saying why."
+    },
+    {
+      "id": "real-key",
+      "term": "RealKey",
+      "definition": "The upstream provider key an llm-scoped agent key needs at create time. Reads return it as an empty string, so deleting an llm key before holding the RealKey is a one-way door."
+    },
+    {
+      "id": "workload-identity",
+      "term": "Workload identity",
+      "definition": "A key with no static secret that authenticates by a token from an external issuer, with a mandatory audience and a lifetime cap. Whether the deployed gateway accepts these tokens is UNVERIFIED."
+    }
+  ],
+  "sources": [
+    {
+      "id": "rfc6750",
+      "title": "RFC 6750: The OAuth 2.0 Bearer Token Usage",
+      "url": "https://www.rfc-editor.org/rfc/rfc6750",
+      "kind": "standard",
+      "use": "Bearer credential and the 401 challenge shape",
+      "status": "not-read",
+      "checked": "2026-10-21"
+    },
+    {
+      "id": "rfc9728",
+      "title": "RFC 9728: OAuth 2.0 Protected Resource Metadata",
+      "url": "https://www.rfc-editor.org/rfc/rfc9728",
+      "kind": "standard",
+      "use": "resource_metadata in the mcp 401 challenge",
+      "status": "not-read",
+      "checked": "2026-10-21"
+    }
+  ],
+  "cards": [
+    {
+      "id": "try-happy",
+      "label": "Register, grant, call",
+      "description": "One key is the agent's whole identity: scopes, custodian, caps and expiry hang off it. The grant is what lets it reach one tool.",
+      "group": "try-it",
+      "action": {
+        "type": "route",
+        "href": "/#scenario-S01"
+      },
+      "story": "S01"
+    },
+    {
+      "id": "try-revoke",
+      "label": "Revoke and watch it refused",
+      "description": "Revoke is the only non-destructive kill. The key, its caps and its grants stay; the gateway answers 401 and does not say why.",
+      "group": "try-it",
+      "action": {
+        "type": "route",
+        "href": "/#scenario-S02"
+      },
+      "story": "S02"
+    },
+    {
+      "id": "try-scope",
+      "label": "Two different 403s",
+      "description": "Two different 403s. A missing scope names itself; a missing grant is a bare 403 that only the gateway log explains.",
+      "group": "try-it",
+      "action": {
+        "type": "route",
+        "href": "/#scenario-S03"
+      },
+      "story": "S03"
+    },
+    {
+      "id": "try-cap",
+      "label": "The 429 shape",
+      "description": "Caps are registration attributes on the key. Over the cap the gateway answers 429 with retry-after; waiting clears it. Enforcement policy belongs to the kill-switch demo, not this one.",
+      "group": "try-it",
+      "action": {
+        "type": "route",
+        "href": "/#scenario-S04"
+      },
+      "story": "S04"
+    },
+    {
+      "id": "try-rotate",
+      "label": "Rotate by replacement",
+      "description": "A PUT with a new VirtualKey returns 200 and changes nothing. Real rotation is snapshot, create successor, verify, revoke the old.",
+      "group": "try-it",
+      "action": {
+        "type": "route",
+        "href": "/#scenario-S05"
+      },
+      "story": "S05"
+    },
+    {
+      "id": "try-delete-llm",
+      "label": "The delete trap for llm keys",
+      "description": "Reads return RealKey as an empty string, so a deleted llm key cannot be recreated unless you hold the upstream key. Revoke instead.",
+      "group": "try-it",
+      "action": {
+        "type": "route",
+        "href": "/#scenario-S06"
+      },
+      "story": "S06"
+    },
+    {
+      "id": "try-same-name",
+      "label": "Same-name recreate inherits grants",
+      "description": "Grants reference keys by name. A new key with the old name silently inherits the old key's access, including access nobody reviewed for the new key.",
+      "group": "try-it",
+      "action": {
+        "type": "route",
+        "href": "/#scenario-S07"
+      },
+      "story": "S07"
+    },
+    {
+      "id": "try-workload",
+      "label": "A workload identity with no secret",
+      "description": "The key trusts an external issuer instead of holding a secret. The audience is mandatory and the token lifetime is capped. Gateway acceptance on the real product is UNVERIFIED.",
+      "group": "try-it",
+      "action": {
+        "type": "route",
+        "href": "/#scenario-S08"
+      },
+      "story": "S08"
+    },
+    {
+      "id": "try-expiry",
+      "label": "Expiry and renewal",
+      "description": "An expired key is refused like an unknown one. Moving NotAfter forward renews it, so put every expiry on a calendar.",
+      "group": "try-it",
+      "action": {
+        "type": "route",
+        "href": "/#scenario-S09"
+      },
+      "story": "S09"
+    },
+    {
+      "id": "concept-lifecycle",
+      "label": "The agent lifecycle",
+      "description": "Register, grant, rotate, retire.",
+      "group": "concept",
+      "action": {
+        "type": "route",
+        "href": "/#concept-lifecycle"
+      },
+      "terms": [
+        "agent-key",
+        "custodian",
+        "grant",
+        "rotate-by-replacement",
+        "revoke"
+      ]
+    },
+    {
+      "id": "concept-traps",
+      "label": "Traps that cost hours",
+      "description": "RealKey, same-name grants, the PUT that is ignored.",
+      "group": "concept",
+      "action": {
+        "type": "route",
+        "href": "/#concept-traps"
+      },
+      "terms": [
+        "real-key",
+        "grant",
+        "workload-identity"
+      ]
+    },
+    {
+      "id": "ref-doctor",
+      "label": "Doctor and health",
+      "description": "Preflight checks and the demo-health/1 endpoint.",
+      "group": "setup",
+      "action": {
+        "type": "route",
+        "href": "/api/health"
+      }
+    }
+  ],
+  "stories": [
+    {
+      "id": "S01",
+      "title": "Register, grant, call: the agent gets its own identity",
+      "say": "One key is the agent's whole identity: scopes, custodian, caps and expiry hang off it. The grant is what lets it reach one tool."
+    },
+    {
+      "id": "S02",
+      "title": "Revoke the agent and the gateway refuses it",
+      "say": "Revoke is the only non-destructive kill. The key, its caps and its grants stay; the gateway answers 401 and does not say why."
+    },
+    {
+      "id": "S03",
+      "title": "Scope too narrow, and an app that was never granted",
+      "say": "Two different 403s. A missing scope names itself; a missing grant is a bare 403 that only the gateway log explains."
+    },
+    {
+      "id": "S04",
+      "title": "Per-key rate cap: the 429 shape",
+      "say": "Caps are registration attributes on the key. Over the cap the gateway answers 429 with retry-after; waiting clears it. Enforcement policy belongs to the kill-switch demo, not this one."
+    },
+    {
+      "id": "S05",
+      "title": "In-place rotation does not exist; replacement does",
+      "say": "A PUT with a new VirtualKey returns 200 and changes nothing. Real rotation is snapshot, create successor, verify, revoke the old."
+    },
+    {
+      "id": "S06",
+      "title": "Deleting an llm key without its RealKey is a one-way door",
+      "say": "Reads return RealKey as an empty string, so a deleted llm key cannot be recreated unless you hold the upstream key. Revoke instead."
+    },
+    {
+      "id": "S07",
+      "title": "Delete and recreate under the same name: grants come back",
+      "say": "Grants reference keys by name. A new key with the old name silently inherits the old key's access, including access nobody reviewed for the new key."
+    },
+    {
+      "id": "S08",
+      "title": "Workload identity: an agent with no static secret",
+      "say": "The key trusts an external issuer instead of holding a secret. The audience is mandatory and the token lifetime is capped. Gateway acceptance on the real product is UNVERIFIED."
+    },
+    {
+      "id": "S09",
+      "title": "Expiry retires an agent on its own, and editing renews it",
+      "say": "An expired key is refused like an unknown one. Moving NotAfter forward renews it, so put every expiry on a calendar."
+    }
+  ]
+}

@@ -1,0 +1,125 @@
+[
+  {
+    "id": "S01", "slug": "happy-path", "kind": "happy", "outcome": "completes",
+    "title": "Register, grant, call: the agent gets its own identity",
+    "takeaway": "One key is the agent's whole identity: scopes, custodian, caps and expiry hang off it. The grant is what lets it reach one tool.",
+    "rules": ["virtual-key-immutable"],
+    "steps": [
+      { "op": "register", "as": "agent", "say": "{{custodian}} registers {{agent_label}} as {{agent}}: scope mcp, custodian {{custodian}}, one year expiry. The registry mints the VirtualKey; nobody chooses it.",
+        "spec": { "Scopes": ["mcp"], "Custodian": "{{custodian}}", "NotAfter": "+1y", "RPMLimit": 60 }, "expect": { "status": 201 } },
+      { "op": "grant", "key": "agent", "app": "{{app}}", "tools": ["{{tool}}"], "say": "The key is granted to {{app}}, tool {{tool}} only. The grant names the key, not its value.", "expect": { "status": 201 } },
+      { "op": "call", "key": "agent", "route": { "kind": "mcp", "app": "{{app}}", "tool": "{{tool}}" }, "say": "{{agent_label}} calls {{tool}} on {{app}} with its key.", "expect": { "status": 200 } }
+    ]
+  },
+  {
+    "id": "S02", "slug": "revoked-refused", "kind": "retire", "outcome": "refused",
+    "title": "Revoke the agent and the gateway refuses it",
+    "takeaway": "Revoke is the only non-destructive kill. The key, its caps and its grants stay; the gateway answers 401 and does not say why.",
+    "rules": ["revoke-only-non-destructive-kill"],
+    "steps": [
+      { "op": "register", "as": "agent", "say": "{{agent_label}} is registered as {{agent}}.", "spec": { "Scopes": ["mcp"], "Custodian": "{{custodian}}", "NotAfter": "+1y" }, "expect": { "status": 201 } },
+      { "op": "grant", "key": "agent", "app": "{{app}}", "say": "Granted to {{app}}.", "expect": { "status": 201 } },
+      { "op": "call", "key": "agent", "route": { "kind": "mcp", "app": "{{app}}", "tool": "{{tool}}" }, "say": "It works.", "expect": { "status": 200 } },
+      { "op": "revoke", "key": "agent", "say": "{{custodian}} retires the agent: Revoked:true. Nothing is deleted.", "expect": { "status": 200 } },
+      { "op": "call", "key": "agent", "route": { "kind": "mcp", "app": "{{app}}", "tool": "{{tool}}" }, "say": "The same call now gets 401. A revoked key looks exactly like an unknown one on the wire; only the gateway log says which.", "expect": { "status": 401 } }
+    ]
+  },
+  {
+    "id": "S03", "slug": "scope-too-narrow", "kind": "refusal", "outcome": "refused",
+    "title": "Scope too narrow, and an app that was never granted",
+    "takeaway": "Two different 403s. A missing scope names itself; a missing grant is a bare 403 that only the gateway log explains.",
+    "rules": [],
+    "steps": [
+      { "op": "register", "as": "agent", "say": "{{agent_label}} is registered with the mcp scope only.", "spec": { "Scopes": ["mcp"], "Custodian": "{{custodian}}", "NotAfter": "+1y" }, "expect": { "status": 201 } },
+      { "op": "grant", "key": "agent", "app": "{{app}}", "say": "Granted to {{app}} and nothing else.", "expect": { "status": 201 } },
+      { "op": "call", "key": "agent", "route": { "kind": "a2a", "app": "{{app}}" }, "say": "It tries an agent-to-agent call. The key has no a2a scope: the one self-describing refusal.", "expect": { "status": 403, "bodyIncludes": "key not scoped for a2a access" } },
+      { "op": "call", "key": "agent", "route": { "kind": "mcp", "app": "{{other_app}}", "tool": "{{tool}}" }, "say": "It tries {{other_app}}, which it was never granted. Bare 403 Forbidden, no reason on the wire.", "expect": { "status": 403, "bodyIncludes": "Forbidden" } }
+    ]
+  },
+  {
+    "id": "S04", "slug": "cap-exceeded-429", "kind": "refusal", "outcome": "refused",
+    "title": "Per-key rate cap: the 429 shape",
+    "takeaway": "Caps are registration attributes on the key. Over the cap the gateway answers 429 with retry-after; waiting clears it. Enforcement policy belongs to the kill-switch demo, not this one.",
+    "rules": ["native-caps-429", "llm-needs-real-key"],
+    "steps": [
+      { "op": "register", "as": "agent", "say": "{{agent_label}} is registered for llm with RPMLimit 3. An llm key needs the upstream RealKey at create time.", "spec": { "Scopes": ["llm"], "Provider": "{{provider}}", "AllowedModels": ["{{model}}"], "RealKey": "sk-MOCK-REAL-UPSTREAM-PLACEHOLDER", "Custodian": "{{custodian}}", "RPMLimit": 3, "NotAfter": "+1y" }, "expect": { "status": 201 } },
+      { "op": "call", "key": "agent", "route": { "kind": "llm", "provider": "{{provider}}", "model": "{{model}}" }, "say": "Call 1.", "expect": { "status": 200 } },
+      { "op": "call", "key": "agent", "route": { "kind": "llm", "provider": "{{provider}}", "model": "{{model}}" }, "say": "Call 2.", "expect": { "status": 200 } },
+      { "op": "call", "key": "agent", "route": { "kind": "llm", "provider": "{{provider}}", "model": "{{model}}" }, "say": "Call 3.", "expect": { "status": 200 } },
+      { "op": "call", "key": "agent", "route": { "kind": "llm", "provider": "{{provider}}", "model": "{{model}}" }, "say": "Call 4 in the same minute: 429 tokens_rate_limit_exceeded with a retry-after header.", "expect": { "status": 429, "bodyIncludes": "tokens_rate_limit_exceeded" } },
+      { "op": "wait", "seconds": 61, "say": "The virtual clock moves 61 seconds. Nothing sleeps." },
+      { "op": "call", "key": "agent", "route": { "kind": "llm", "provider": "{{provider}}", "model": "{{model}}" }, "say": "The window has passed; the call succeeds again.", "expect": { "status": 200 } }
+    ]
+  },
+  {
+    "id": "S05", "slug": "rotate-unsafe-vs-safe", "kind": "lifecycle", "outcome": "completes",
+    "title": "In-place rotation does not exist; replacement does",
+    "takeaway": "A PUT with a new VirtualKey returns 200 and changes nothing. Real rotation is snapshot, create successor, verify, revoke the old.",
+    "rules": ["virtual-key-immutable", "no-rotate-endpoint", "guardrail-copied-with-spec", "grants-by-name"],
+    "steps": [
+      { "op": "register", "as": "agent", "say": "{{agent_label}} is registered with a guardrail set to block and a 60/min cap.", "spec": { "Scopes": ["mcp"], "Custodian": "{{custodian}}", "NotAfter": "+1y", "RPMLimit": 60, "Guardrail": { "mode": "block", "blockAgreement": "off" } }, "expect": { "status": 201 } },
+      { "op": "grant", "key": "agent", "app": "{{app}}", "say": "Granted to {{app}}.", "expect": { "status": 201 } },
+      { "op": "put", "key": "agent", "spec": { "VirtualKey": "sk-MOCK-ATTEMPTED-NEW-VALUE-0000000000000000000000000" }, "say": "UNSAFE: someone PUTs a new VirtualKey hoping to rotate. The registry returns 200. The value is ignored.", "expect": { "status": 200, "virtualKeyUnchanged": true } },
+      { "op": "call", "key": "agent", "route": { "kind": "mcp", "app": "{{app}}", "tool": "{{tool}}" }, "say": "The old key still works, because nothing rotated.", "expect": { "status": 200 } },
+      { "op": "rotate", "key": "agent", "as": "next", "successor": "{{agent_next}}", "say": "SAFE: snapshot the spec, create {{agent_next}} from it, copy its grants, verify it with a real call, then revoke the old key.", "expect": { "status": 200 } },
+      { "op": "call", "key": "agent", "route": { "kind": "mcp", "app": "{{app}}", "tool": "{{tool}}" }, "say": "The old value now gets 401: the leak window is closed.", "expect": { "status": 401 } },
+      { "op": "call", "key": "next", "route": { "kind": "mcp", "app": "{{app}}", "tool": "{{tool}}" }, "say": "The successor works, with a new VirtualKey, and carries the same caps and guardrail.", "expect": { "status": 200 } }
+    ]
+  },
+  {
+    "id": "S06", "slug": "delete-llm-blocked", "kind": "trap", "outcome": "blocked",
+    "title": "Deleting an llm key without its RealKey is a one-way door",
+    "takeaway": "Reads return RealKey as an empty string, so a deleted llm key cannot be recreated unless you hold the upstream key. Revoke instead.",
+    "rules": ["never-delete-llm-without-real-key", "real-key-never-returned", "revoke-only-non-destructive-kill"],
+    "steps": [
+      { "op": "register", "as": "agent", "say": "{{agent_label}} is registered for llm, with a RealKey.", "spec": { "Scopes": ["llm"], "Provider": "{{provider}}", "AllowedModels": ["{{model}}"], "RealKey": "sk-MOCK-REAL-UPSTREAM-PLACEHOLDER", "Custodian": "{{custodian}}", "NotAfter": "+1y" }, "expect": { "status": 201 } },
+      { "op": "get", "key": "agent", "say": "A read shows RealKey as an empty string. The registry will never hand it back.", "expect": { "status": 200, "bodyIncludes": "\"RealKey\": \"\"" } },
+      { "op": "delete", "key": "agent", "say": "Someone tries to delete it to rotate. THIS DEMO refuses (the real API would let you): recreate would need the RealKey nobody can read back.", "expect": { "status": 409, "bodyIncludes": "blocked_by_demo_guard" } },
+      { "op": "revoke", "key": "agent", "say": "Revoke instead: the agent is dead to the gateway and nothing is lost.", "expect": { "status": 200 } },
+      { "op": "call", "key": "agent", "route": { "kind": "llm", "provider": "{{provider}}", "model": "{{model}}" }, "say": "Calls are refused.", "expect": { "status": 401 } }
+    ]
+  },
+  {
+    "id": "S07", "slug": "same-name-inherits-grants", "kind": "trap", "outcome": "trap",
+    "title": "Delete and recreate under the same name: grants come back",
+    "takeaway": "Grants reference keys by name. A new key with the old name silently inherits the old key's access, including access nobody reviewed for the new key.",
+    "rules": ["grants-by-name"],
+    "steps": [
+      { "op": "register", "as": "agent", "say": "{{agent}} is registered with mcp scope and granted to {{app}}.", "spec": { "Scopes": ["mcp"], "Custodian": "{{custodian}}", "NotAfter": "+1y" }, "expect": { "status": 201 } },
+      { "op": "grant", "key": "agent", "app": "{{app}}", "say": "Granted to {{app}}.", "expect": { "status": 201 } },
+      { "op": "delete", "key": "agent", "say": "The key is deleted (no llm scope, so nothing is lost). The grant is not removed.", "expect": { "status": 200 } },
+      { "op": "warnings", "say": "The registry now holds a dangling grant that names a key that does not exist.", "expect": { "types": ["dangling"] } },
+      { "op": "register", "as": "impostor", "name": "{{agent}}", "say": "Someone creates a NEW key with the same name, a different custodian, and never grants it anything.", "spec": { "Scopes": ["mcp"], "Custodian": "Someone Else", "NotAfter": "+30d" }, "expect": { "status": 201 } },
+      { "op": "call", "key": "impostor", "route": { "kind": "mcp", "app": "{{app}}", "tool": "{{tool}}" }, "say": "The new key reaches {{app}}: it inherited the grant by name.", "expect": { "status": 200 } },
+      { "op": "warnings", "say": "The warning list flags the grant as inherited. In the real product nothing flags it.", "expect": { "types": ["inherited"] } }
+    ]
+  },
+  {
+    "id": "S08", "slug": "workload-identity", "kind": "nhi", "outcome": "completes",
+    "title": "Workload identity: an agent with no static secret",
+    "takeaway": "The key trusts an external issuer instead of holding a secret. The audience is mandatory and the token lifetime is capped. Gateway acceptance on the real product is UNVERIFIED.",
+    "rules": ["workload-no-static-secret", "workload-gateway-acceptance"],
+    "steps": [
+      { "op": "register", "as": "agent", "say": "{{agent_label}} is registered as a workload identity: issuer {{issuer}}, audience {{audience}}, one subject, 5 minute lifetime cap. No VirtualKey is minted.", "spec": { "Scopes": ["mcp"], "NotAfter": "+90d", "WorkloadIdentity": { "Issuer": "{{issuer}}", "Audience": "{{audience}}", "Subject": "{{subject}}", "MaxTokenLifetimeSec": 300 } }, "expect": { "status": 201, "noStaticSecret": true } },
+      { "op": "grant", "key": "agent", "app": "{{app}}", "say": "Granted to {{app}} like any other key.", "expect": { "status": 201 } },
+      { "op": "call", "key": "agent", "credential": "workload", "claims": { "iss": "{{issuer}}", "aud": "{{audience}}", "sub": "{{subject}}", "lifetime": 120 }, "route": { "kind": "mcp", "app": "{{app}}", "tool": "{{tool}}" }, "say": "The workload presents the issuer's token (mock claims; signatures are not simulated). The gateway accepts it.", "expect": { "status": 200 } },
+      { "op": "call", "key": "agent", "credential": "workload", "claims": { "iss": "{{issuer}}", "aud": "https://elsewhere.example.invalid/mcp", "sub": "{{subject}}", "lifetime": 120 }, "route": { "kind": "mcp", "app": "{{app}}", "tool": "{{tool}}" }, "say": "A token minted for a different audience is refused: an unbound token would be replayable elsewhere.", "expect": { "status": 401 } },
+      { "op": "call", "key": "agent", "credential": "workload", "claims": { "iss": "{{issuer}}", "aud": "{{audience}}", "sub": "{{subject}}", "lifetime": 3600 }, "route": { "kind": "mcp", "app": "{{app}}", "tool": "{{tool}}" }, "say": "A token that lives an hour exceeds the 5 minute cap and is refused.", "expect": { "status": 401 } }
+    ]
+  },
+  {
+    "id": "S09", "slug": "expired-key", "kind": "retire", "outcome": "refused",
+    "title": "Expiry retires an agent on its own, and editing renews it",
+    "takeaway": "An expired key is refused like an unknown one. Moving NotAfter forward renews it, so put every expiry on a calendar.",
+    "rules": ["expired-edit-renews"],
+    "steps": [
+      { "op": "register", "as": "agent", "say": "{{agent_label}} is registered with a one hour expiry.", "spec": { "Scopes": ["mcp"], "Custodian": "{{custodian}}", "NotAfter": "+1h" }, "expect": { "status": 201 } },
+      { "op": "grant", "key": "agent", "app": "{{app}}", "say": "Granted to {{app}}.", "expect": { "status": 201 } },
+      { "op": "call", "key": "agent", "route": { "kind": "mcp", "app": "{{app}}", "tool": "{{tool}}" }, "say": "Inside the hour it works.", "expect": { "status": 200 } },
+      { "op": "wait", "seconds": 7200, "say": "Two hours pass on the virtual clock." },
+      { "op": "call", "key": "agent", "route": { "kind": "mcp", "app": "{{app}}", "tool": "{{tool}}" }, "say": "The key has expired: 401, same shape as an unknown key.", "expect": { "status": 401 } },
+      { "op": "put", "key": "agent", "spec": { "NotAfter": "+30d" }, "say": "{{custodian}} edits the key and moves NotAfter forward. Editing an expired key is renewing it.", "expect": { "status": 200 } },
+      { "op": "call", "key": "agent", "route": { "kind": "mcp", "app": "{{app}}", "tool": "{{tool}}" }, "say": "Same VirtualKey, working again.", "expect": { "status": 200 } }
+    ]
+  }
+]

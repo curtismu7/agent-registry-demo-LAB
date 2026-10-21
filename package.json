@@ -1,0 +1,21 @@
+{
+  "name": "agent-registry-demo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Agent Registry lifecycle demo: register an AI agent as a non-human identity, grant it to a tool, rotate it by replacement, retire it, and watch the gateway refuse it (401/403/429). Mock only: an in-process registry simulator and a tiny mock gateway. No tenant, no outbound network.",
+  "license": "MIT",
+  "workspaces": ["server", "web"],
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "start": "npm start -w server",
+    "build": "npm run build -w web",
+    "test": "npm test -w server && npm test -w web && node --test scripts/*.test.mjs",
+    "doctor": "node scripts/doctor.mjs",
+    "reset": "node scripts/reset.mjs",
+    "content-pack": "node scripts/validate-content-pack.mjs",
+    "mutation-check": "node scripts/mutation-check.mjs",
+    "prepare": "git config core.hooksPath .githooks || true"
+  },
+  "devDependencies": { "ajv": "^8.20.0" }
+}
