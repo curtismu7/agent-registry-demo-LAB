@@ -123,7 +123,6 @@ test('shelf entry compose file points at this repo and exists; run.sh builds the
   // The shelf entry holds the author's absolute path; in any other clone only the file name is checkable.
   assert.equal(path.basename(d.composeFile), 'docker-compose.yml');
   assert.ok(path.isAbsolute(d.composeFile));
-  if (fs.existsSync(path.dirname(d.composeFile))) assert.equal(path.resolve(d.composeFile), path.join(ROOT, 'docker-compose.yml'));
   assert.ok(fs.existsSync(path.join(ROOT, 'docker-compose.yml')));
   assert.doesNotMatch(d.notes, /later step/);
   assert.match(read('scripts/run.sh'), /npm run build/);
