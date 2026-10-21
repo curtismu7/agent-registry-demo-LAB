@@ -43,13 +43,13 @@ test('shelf entry matches the demo: id, catalog id, port, health path, loopback 
   assert.equal(JSON.parse(read('content-pack.json')).demo.baseUrl, d.url);
 });
 
-test('README is true: default port, commands exist, endpoints are real, status says core only', () => {
+test('README is true: default port, commands exist, endpoints are real, status names the current step', () => {
   const readme = read('README.md');
   const pkg = JSON.parse(read('package.json'));
   for (const s of ['doctor', 'start', 'test', 'reset', 'mutation-check', 'content-pack']) { assert.ok(pkg.scripts[s], s); assert.ok(readme.includes(`npm run ${s}`) || s === 'start' || s === 'test', s); }
   for (const f of ['scripts/run.sh', 'docs/architecture.md', 'docs/safety.md', 'content-pack.json', 'docs/shelf-entry.json']) { assert.ok(readme.includes(f), f); assert.ok(fs.existsSync(path.join(ROOT, f)), f); }
   assert.match(readme, /localhost:5010/);
-  assert.match(readme, /step AR0/);
+  assert.match(readme, /step AR1/);
   const app = read('server/src/app.js');
   for (const m of readme.matchAll(/`(?:GET|POST|PUT|DELETE|GET\/POST|GET\/PUT\/DELETE|GET\/POST\/PUT)? ?(\/api\/[a-z/:-]+)/g)) {
     const route = m[1].replace(/\/:name.*$/, '').replace(/^\/api/, '').replace(/\/:id$/, '');
@@ -108,7 +108,12 @@ test('no crypto.generateKeyPairSync anywhere (aborts under GC on Node 20 here)',
   for (const f of tracked().filter((x) => /\.(m?js)$/.test(x) && x !== 'scripts/repo.test.mjs')) assert.ok(!/generateKeyPair/.test(read(f)), f);
 });
 
-test('web is a placeholder until AR1 and says so; package workspaces are server and web', () => {
+test('web is the real React + Vite UI (no placeholder); package workspaces are server and web', () => {
   assert.deepEqual(JSON.parse(read('package.json')).workspaces, ['server', 'web']);
-  assert.match(read('web/package.json'), /placeholder/);
+  const web = JSON.parse(read('web/package.json'));
+  assert.ok(!/placeholder/.test(read('web/package.json')));
+  assert.equal(web.scripts.build, 'vite build');
+  assert.equal(web.scripts.test, 'vitest run');
+  assert.ok(web.dependencies['@xyflow/react'], 'diagrams are ReactFlow');
+  assert.ok(fs.existsSync(path.join(ROOT, 'web/src/tabs/DiagramTab.jsx')));
 });

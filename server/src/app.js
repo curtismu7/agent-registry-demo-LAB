@@ -1,5 +1,5 @@
 // One Express app. /api = the demo API: the live mock registry (keys, grants), the mock gateway, a virtual clock, scenario runs.
-// Loopback Host check and same-origin writes on everything. Serves web/dist when it exists (from step AR1).
+// Loopback Host check and same-origin writes on everything. Serves web/dist when it exists.
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';

@@ -4,7 +4,7 @@ Shows the life of a non-human identity, an AI agent, in an Agent Registry: **reg
 
 Everything is a mock. An in-process registry simulator and a tiny mock gateway run inside one Node process. There is no tenant, no credential and no outbound network (a runtime netguard refuses and self-tests that). Every key is an obviously fake `sk-MOCK-...` value.
 
-**Status: step AR0, core only.** The server, simulator, gateway, stories, doctor and tests are done. The React UI, diagram page, presenter mode and Docker packaging arrive in later steps (`web/` is a placeholder; `npm run build` prints that and succeeds).
+**Status: step AR1, core plus web UI.** Server, simulator, gateway, stories, doctor and tests, plus a React + Vite UI with five tabs (Registry, Lifecycle, Gateway, Diagram, Raw), a ReactFlow lifecycle diagram, presenter mode and dark/light. Docker packaging arrives in a later step.
 
 ## Run it
 
@@ -15,7 +15,7 @@ Everything is a mock. An in-process registry simulator and a tiny mock gateway r
 Then open http://localhost:5010/api/health (there is no page yet). Port 5010 is the default; `PORT` must be 5010-5049. Copy `.env.example` to `.env` to change it. The server binds 127.0.0.1 only unless you set `AREG_BIND` on purpose.
 
 ```sh
-npm test                  # server (node:test) + web placeholder + repo checks
+npm test                  # server (node:test) + web (vitest, against the real server app) + repo checks
 npm run doctor            # preflight: node, bind, port, stories clean, netguard self-test, every scenario behaves
 npm run reset             # forget every key, grant and event in a RUNNING server (loopback only)
 npm run mutation-check    # break each rule on purpose and require the tests to fail
@@ -72,3 +72,7 @@ curl -s -X POST http://localhost:5010/api/run -H 'content-type: application/json
 Runtime guardrail screening (AI Guard sidecar), kill switch and cost or rate cap enforcement, and the audit trail belong to separate demos (catalog D12, D14, D17). Here caps are registration attributes and the gateway only shows the refusal shape; the lifecycle event list is a small own list, not an audit product. `~/Development/privilege-demo` is the Cedar enforcement demo for human personas; nothing here imports it.
 
 See [docs/architecture.md](docs/architecture.md), [docs/safety.md](docs/safety.md), `content-pack.json` and `docs/shelf-entry.json`.
+
+## Web UI
+
+`npm run build` then `npm start` serves the UI and API together at the loopback URL it prints (default port 5010). For hot reload run `npm start` and, in another terminal, `npm run dev -w web` (Vite on 5011, proxying /api). The banner "simulated registry, not the real product" is always visible, including in presenter mode.

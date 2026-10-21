@@ -15,7 +15,7 @@ server/src
   netguard.js   refuses and records every non-loopback socket, DNS lookup, fetch and UDP send; self-tested
   doctor.js     the checks behind `npm run doctor` and GET /api/health
   health.js     demo-health/1
-  app.js        /api routes; serves web/dist when it exists (step AR1)
+  app.js        /api routes; serves web/dist when it exists
 server/data     scenarios.json, verticals.json (stories as data)
 ```
 
@@ -39,4 +39,4 @@ Every gateway call and every registry operation in a story returns `{ traceparen
 
 ## Planned
 
-AR1: React + Vite UI, ReactFlow lifecycle diagram (movable boxes, Simulate, Reset that restores positions, speed control), presenter mode, theme tokens, dark and light. AR2: Docker pin, Learning Hub wiring, shelf registration.
+AR1 (done): React + Vite UI in web/ (tabs Registry, Lifecycle, Gateway, Diagram, Raw), ReactFlow lifecycle diagram (movable boxes, Simulate, Reset that restores positions and the simulation, speed control), presenter mode, theme tokens, dark and light, inert text rendering, keys masked in the UI. Web tests run the real Express app over loopback. AR2: Docker pin, Learning Hub wiring, shelf registration.
