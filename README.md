@@ -17,10 +17,12 @@ Then open http://localhost:5010/ (health: http://localhost:5010/api/health). Por
 ```sh
 npm test                  # server (node:test) + web (vitest, against the real server app) + repo checks
 npm run doctor            # preflight: node, bind, port, stories clean, netguard self-test, every scenario behaves
-npm run reset             # forget every key, grant and event in a RUNNING server (loopback only)
+npm run reset             # forget every key, grant and event in a RUNNING server (loopback only; if you used HOST_PORT=5019 with Docker, run PORT=5019 npm run reset)
 npm run mutation-check    # break each rule on purpose and require the tests to fail
 npm run content-pack      # validate content-pack.json (Learning Hub)
 ```
+
+Note: the delete guard on llm keys (409 until you show the RealKey) is a demo guard; the real API would let you delete. See docs/safety.md.
 
 ## What it teaches
 

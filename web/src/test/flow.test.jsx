@@ -36,6 +36,12 @@ describe("shell", () => {
     await userEvent.keyboard("{ArrowRight}");
     await waitFor(() => expect(screen.getByRole("tab", { name: "Lifecycle" })).toHaveAttribute("aria-selected", "true"));
   });
+  it("rapid ArrowRight presses without pauses still advance one tab each", async () => {
+    await open();
+    screen.getByRole("tab", { name: "Registry" }).focus();
+    await userEvent.keyboard("{ArrowRight}{ArrowRight}");
+    await waitFor(() => expect(screen.getByRole("tab", { name: "Gateway" })).toHaveAttribute("aria-selected", "true"));
+  });
   it("cycles the theme and the persona changes the cast", async () => {
     await open();
     await userEvent.click(screen.getByRole("button", { name: /Theme/ }));

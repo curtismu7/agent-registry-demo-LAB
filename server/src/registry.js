@@ -119,6 +119,7 @@ export function createRegistry({ now = () => Date.now(), rand = randomBytes } = 
     if (out.Scopes.includes('llm')) {
       if (!out.Provider) return err(400, 'invalid_spec', 'Provider is required for llm scope (one provider per key)');
       if (!spec.RealKey) return err(400, 'real_key_required', 'Spec.RealKey is required for llm scope', { rule: 'llm-needs-real-key' });
+      if (!String(spec.RealKey).startsWith('sk-MOCK-')) return err(400, 'invalid_spec', 'demo guard: only sk-MOCK- placeholder RealKey values are accepted. Never send a real provider key to a demo.', { demoGuard: true });
     }
     if ('VirtualKey' in spec) notes.push('Supplied VirtualKey ignored: it is server-generated (rule caller-virtual-key-on-create, UNVERIFIED on the real product).');
     const k = {
@@ -158,6 +159,7 @@ export function createRegistry({ now = () => Date.now(), rand = randomBytes } = 
     const scopes = out.Scopes || k.spec.Scopes;
     if (k.spec.WorkloadIdentity && scopes.includes('llm')) problems.push('workload-identity keys are limited to mcp and a2a in this demo');
     const nextReal = spec.RealKey ? String(spec.RealKey) : k.realKey; // omitted or blank keeps the stored one
+    if (spec.RealKey && !nextReal.startsWith('sk-MOCK-')) return err(400, 'invalid_spec', 'demo guard: only sk-MOCK- placeholder RealKey values are accepted. Never send a real provider key to a demo.', { demoGuard: true });
     if (scopes.includes('llm') && !nextReal) return err(400, 'real_key_required', 'Spec.RealKey is required for llm scope', { rule: 'llm-needs-real-key' });
     if (problems.length) return err(400, 'invalid_spec', problems.join('; '));
     if ('VirtualKey' in spec && spec.VirtualKey !== k.spec.VirtualKey) notes.push('PUT carried a different VirtualKey: returned 200 and ignored it (rule virtual-key-immutable). Nothing was rotated.');

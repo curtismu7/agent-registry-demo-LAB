@@ -263,3 +263,12 @@ test('rules table marks every rule verified, demo-guard or unverified', () => {
   for (const [id, r] of Object.entries(RULES)) { assert.ok(['verified', 'demo-guard', 'unverified'].includes(r.status), id); assert.ok(r.text.length > 20, id); }
   assert.ok(Object.values(RULES).some((r) => r.status === 'unverified'));
 });
+
+test('demo guard: a non-sk-MOCK- RealKey is refused by the server on create and on PUT, and nothing is stored', () => {
+  const r = fresh();
+  const bad = 'not-a-mock-key-0000';
+  assert.equal(r.create({ name: 'l-agent', spec: llmSpec({ RealKey: bad }) }).status, 400);
+  assert.equal(r.get('l-agent').status, 404);
+  r.create({ name: 'l-agent', spec: llmSpec() });
+  assert.equal(r.update('l-agent', { spec: { RealKey: bad } }).status, 400);
+});

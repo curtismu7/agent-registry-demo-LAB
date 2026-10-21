@@ -120,8 +120,11 @@ test('web is the real React + Vite UI (no placeholder); package workspaces are s
 
 test('shelf entry compose file points at this repo and exists; run.sh builds the UI before starting', () => {
   const [d] = JSON.parse(read('docs/shelf-entry.json')).demos;
-  assert.equal(path.resolve(d.composeFile), path.join(ROOT, 'docker-compose.yml'));
-  assert.ok(fs.existsSync(d.composeFile));
+  // The shelf entry holds the author's absolute path; in any other clone only the file name is checkable.
+  assert.equal(path.basename(d.composeFile), 'docker-compose.yml');
+  assert.ok(path.isAbsolute(d.composeFile));
+  if (fs.existsSync(path.dirname(d.composeFile))) assert.equal(path.resolve(d.composeFile), path.join(ROOT, 'docker-compose.yml'));
+  assert.ok(fs.existsSync(path.join(ROOT, 'docker-compose.yml')));
   assert.doesNotMatch(d.notes, /later step/);
   assert.match(read('scripts/run.sh'), /npm run build/);
 });
@@ -137,4 +140,10 @@ test('live-checks is instructions only: no script or source runs it, and it says
 test('talk track covers every story id', () => {
   const doc = read('docs/talk-track.md');
   for (const s of JSON.parse(read('server/data/scenarios.json'))) assert.ok(doc.includes(s.id), s.id);
+});
+
+test('README is not stale: no "no page yet", and tells Docker users to set PORT for reset', () => {
+  const r = read('README.md');
+  assert.doesNotMatch(r, /no page yet/);
+  assert.match(r, /PORT=5019 npm run reset/);
 });

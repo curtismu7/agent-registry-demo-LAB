@@ -75,7 +75,8 @@ function Shell({ catalog, setCatalog, world, refresh, tab, theme, setTheme, pres
   const togglePresent = () => { write("areg.present", present ? "0" : "1"); setPresent(!present); };
   const go = (id) => { window.location.hash = `#/${id}`; };
   const onTabKey = (e) => {
-    const i = TABS.findIndex(([id]) => id === tab);
+    const focused = TABS.findIndex(([id]) => tabRefs.current[id] === document.activeElement);
+    const i = focused >= 0 ? focused : TABS.findIndex(([id]) => id === tab);
     const to = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: TABS.length - 1 }[e.key];
     if (to === undefined) return;
     e.preventDefault();
