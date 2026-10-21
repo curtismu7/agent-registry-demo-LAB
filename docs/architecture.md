@@ -39,4 +39,4 @@ Every gateway call and every registry operation in a story returns `{ traceparen
 
 ## Planned
 
-AR1 (done): React + Vite UI in web/ (tabs Registry, Lifecycle, Gateway, Diagram, Raw), ReactFlow lifecycle diagram (movable boxes, Simulate, Reset that restores positions and the simulation, speed control), presenter mode, theme tokens, dark and light, inert text rendering, keys masked in the UI. Web tests run the real Express app over loopback. AR2: Docker pin, Learning Hub wiring, shelf registration.
+AR1 (done): React + Vite UI in web/ (tabs Registry, Lifecycle, Gateway, Diagram, Raw), ReactFlow lifecycle diagram (movable boxes, Simulate, Reset that restores positions and the simulation, speed control), presenter mode, theme tokens, dark and light, inert text rendering, keys masked in the UI. Web tests run the real Express app over loopback. AR2 (done): Dockerfile and compose with loopback-only publish pinned by scripts/compose.test.mjs, run.sh builds the UI, content pack and shelf entry, talk track, live-checks guide.

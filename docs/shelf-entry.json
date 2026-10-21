@@ -10,7 +10,7 @@
       "healthPath": "/api/health",
       "composeFile": "/Users/cmuir/Development/agent-registry-demo/docker-compose.yml",
       "composeOverlays": [],
-      "notes": "Host-run: ./scripts/run.sh (port 5010). Mock only: no tenant, no credentials. Docker packaging arrives in a later step (composeFile is a placeholder until then). composeFile is an absolute path on this machine; change it if the repo lives elsewhere."
+      "notes": "Host-run: ./scripts/run.sh (port 5010). Mock only: no tenant, no credentials. Docker: HOST_PORT=5010 docker compose up --build -d (published on 127.0.0.1 only). composeFile is an absolute path on this machine; change it if the repo lives elsewhere."
     }
   ]
 }

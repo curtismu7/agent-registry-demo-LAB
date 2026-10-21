@@ -47,9 +47,9 @@ test('README is true: default port, commands exist, endpoints are real, status n
   const readme = read('README.md');
   const pkg = JSON.parse(read('package.json'));
   for (const s of ['doctor', 'start', 'test', 'reset', 'mutation-check', 'content-pack']) { assert.ok(pkg.scripts[s], s); assert.ok(readme.includes(`npm run ${s}`) || s === 'start' || s === 'test', s); }
-  for (const f of ['scripts/run.sh', 'docs/architecture.md', 'docs/safety.md', 'content-pack.json', 'docs/shelf-entry.json']) { assert.ok(readme.includes(f), f); assert.ok(fs.existsSync(path.join(ROOT, f)), f); }
+  for (const f of ['scripts/run.sh', 'docs/architecture.md', 'docs/safety.md', 'content-pack.json', 'docs/shelf-entry.json', 'docs/talk-track.md', 'docs/live-checks.md']) { assert.ok(readme.includes(f), f); assert.ok(fs.existsSync(path.join(ROOT, f)), f); }
   assert.match(readme, /localhost:5010/);
-  assert.match(readme, /step AR1/);
+  assert.match(readme, /step AR2/);
   const app = read('server/src/app.js');
   for (const m of readme.matchAll(/`(?:GET|POST|PUT|DELETE|GET\/POST|GET\/PUT\/DELETE|GET\/POST\/PUT)? ?(\/api\/[a-z/:-]+)/g)) {
     const route = m[1].replace(/\/:name.*$/, '').replace(/^\/api/, '').replace(/\/:id$/, '');
@@ -116,4 +116,25 @@ test('web is the real React + Vite UI (no placeholder); package workspaces are s
   assert.equal(web.scripts.test, 'vitest run');
   assert.ok(web.dependencies['@xyflow/react'], 'diagrams are ReactFlow');
   assert.ok(fs.existsSync(path.join(ROOT, 'web/src/tabs/DiagramTab.jsx')));
+});
+
+test('shelf entry compose file points at this repo and exists; run.sh builds the UI before starting', () => {
+  const [d] = JSON.parse(read('docs/shelf-entry.json')).demos;
+  assert.equal(path.resolve(d.composeFile), path.join(ROOT, 'docker-compose.yml'));
+  assert.ok(fs.existsSync(d.composeFile));
+  assert.doesNotMatch(d.notes, /later step/);
+  assert.match(read('scripts/run.sh'), /npm run build/);
+});
+
+test('live-checks is instructions only: no script or source runs it, and it says so and marks writes owner-only', () => {
+  const doc = read('docs/live-checks.md');
+  assert.match(doc, /instructions only/i);
+  assert.match(doc, /owner-only/i);
+  assert.match(doc, /UNVERIFIED/);
+  for (const f of tracked().filter((x) => /\.(m?js|sh|jsx)$/.test(x) && x !== 'scripts/repo.test.mjs')) assert.ok(!read(f).includes('live-checks'), `${f} references live-checks`);
+});
+
+test('talk track covers every story id', () => {
+  const doc = read('docs/talk-track.md');
+  for (const s of JSON.parse(read('server/data/scenarios.json'))) assert.ok(doc.includes(s.id), s.id);
 });

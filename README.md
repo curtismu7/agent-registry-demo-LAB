@@ -4,7 +4,7 @@ Shows the life of a non-human identity, an AI agent, in an Agent Registry: **reg
 
 Everything is a mock. An in-process registry simulator and a tiny mock gateway run inside one Node process. There is no tenant, no credential and no outbound network (a runtime netguard refuses and self-tests that). Every key is an obviously fake `sk-MOCK-...` value.
 
-**Status: step AR1, core plus web UI.** Server, simulator, gateway, stories, doctor and tests, plus a React + Vite UI with five tabs (Registry, Lifecycle, Gateway, Diagram, Raw), a ReactFlow lifecycle diagram, presenter mode and dark/light. Docker packaging arrives in a later step.
+**Status: step AR2, integration and docs.** Server, simulator, gateway, stories, doctor and tests, a React + Vite UI with five tabs (Registry, Lifecycle, Gateway, Diagram, Raw), a ReactFlow lifecycle diagram, presenter mode and dark/light, Docker packaging (loopback publish pinned by a test), Learning Hub content pack, shelf entry, talk track and an optional owner-run live-check guide.
 
 ## Run it
 
@@ -12,7 +12,7 @@ Everything is a mock. An in-process registry simulator and a tiny mock gateway r
 ./scripts/run.sh          # installs if needed, runs the doctor, starts the server
 ```
 
-Then open http://localhost:5010/api/health (there is no page yet). Port 5010 is the default; `PORT` must be 5010-5049. Copy `.env.example` to `.env` to change it. The server binds 127.0.0.1 only unless you set `AREG_BIND` on purpose.
+Then open http://localhost:5010/ (health: http://localhost:5010/api/health). Port 5010 is the default; `PORT` must be 5010-5049. Copy `.env.example` to `.env` to change it. The server binds 127.0.0.1 only unless you set `AREG_BIND` on purpose.
 
 ```sh
 npm test                  # server (node:test) + web (vitest, against the real server app) + repo checks
@@ -66,6 +66,24 @@ Try it (server running):
 ```sh
 curl -s -X POST http://localhost:5010/api/run -H 'content-type: application/json' -d '{"scenario":"S05","vertical":"travel"}'
 ```
+
+## Docker (OrbStack)
+
+```sh
+HOST_PORT=5010 docker compose up --build -d     # http://127.0.0.1:5010/  (HOST_PORT must be in 5010-5049)
+docker compose down
+```
+
+The server listens on all interfaces inside the container (`AREG_BIND=0.0.0.0`, set in the Dockerfile on purpose) but `docker-compose.yml` publishes the port on `127.0.0.1` only, and `scripts/compose.test.mjs` pins that. The container is read-only, drops all capabilities and has a `demo-health/1` healthcheck.
+
+## Reset
+
+The Reset button in the UI, or `npm run reset` (`node scripts/reset.mjs [base-url]`, loopback only), forgets every key, grant and event and restarts the virtual clock. `POST /api/reset` is the endpoint behind both.
+
+## Docs
+
+- [docs/talk-track.md](docs/talk-track.md): ten-minute script for SEs.
+- [docs/live-checks.md](docs/live-checks.md): optional, owner-run, read-only comparison with a real Privilege console. Instructions only; nothing here runs it.
 
 ## Not this demo
 
