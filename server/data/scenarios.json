@@ -97,7 +97,7 @@
   {
     "id": "S08", "slug": "workload-identity", "kind": "nhi", "outcome": "completes",
     "title": "Workload identity: an agent with no static secret",
-    "takeaway": "The key trusts an external issuer instead of holding a secret. The audience is mandatory and the token lifetime is capped. Gateway acceptance on the real product is UNVERIFIED.",
+    "takeaway": "The key trusts an external issuer instead of holding a secret. Ping's 2026-11-02 release notes call this a Federated Identity (formerly Non-Human Identity; the console API object is still NonHumanIdentity). The audience is mandatory and the token lifetime is capped. Gateway acceptance on the real product is UNVERIFIED.",
     "rules": ["workload-no-static-secret", "workload-gateway-acceptance"],
     "steps": [
       { "op": "register", "as": "agent", "say": "{{agent_label}} is registered as a workload identity: issuer {{issuer}}, audience {{audience}}, one subject, 5 minute lifetime cap. No VirtualKey is minted.", "spec": { "Scopes": ["mcp"], "NotAfter": "+90d", "WorkloadIdentity": { "Issuer": "{{issuer}}", "Audience": "{{audience}}", "Subject": "{{subject}}", "MaxTokenLifetimeSec": 300 } }, "expect": { "status": 201, "noStaticSecret": true } },

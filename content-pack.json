@@ -160,7 +160,7 @@
     {
       "id": "try-workload",
       "label": "A workload identity with no secret",
-      "description": "The key trusts an external issuer instead of holding a secret. The audience is mandatory and the token lifetime is capped. Gateway acceptance on the real product is UNVERIFIED.",
+      "description": "The key trusts an external issuer instead of holding a secret. Ping's 2026-11-02 release notes call this a Federated Identity (formerly Non-Human Identity; the console API object is still NonHumanIdentity). The audience is mandatory and the token lifetime is capped. Gateway acceptance on the real product is UNVERIFIED.",
       "group": "try-it",
       "action": {
         "type": "route",
@@ -261,7 +261,7 @@
     {
       "id": "S08",
       "title": "Workload identity: an agent with no static secret",
-      "say": "The key trusts an external issuer instead of holding a secret. The audience is mandatory and the token lifetime is capped. Gateway acceptance on the real product is UNVERIFIED."
+      "say": "The key trusts an external issuer instead of holding a secret. Ping's 2026-11-02 release notes call this a Federated Identity (formerly Non-Human Identity; the console API object is still NonHumanIdentity). The audience is mandatory and the token lifetime is capped. Gateway acceptance on the real product is UNVERIFIED."
     },
     {
       "id": "S09",

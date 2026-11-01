@@ -37,7 +37,7 @@ Nine stories (`server/data/scenarios.json`), each run in three verticals (Travel
 | S05 | In-place rotation attempt (ignored) vs rotation by replacement | PUT 200 and nothing changes; replacement works |
 | S06 | Delete an llm key without its RealKey | blocked, revoke instead |
 | S07 | Delete and recreate under the same name | the new key inherits the old grants |
-| S08 | Workload identity, no static secret | 200, wrong audience 401, over-long token 401 |
+| S08 | Workload identity (now called Federated Identity), no static secret | 200, wrong audience 401, over-long token 401 |
 | S09 | Expiry and renewal | 401, then edit renews |
 
 The real-behaviour rules the simulator encodes, and which are verified, a demo-added guard, or UNVERIFIED, are in [docs/safety.md](docs/safety.md). The mock never pretends in-place rotation exists.
