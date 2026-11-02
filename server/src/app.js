@@ -12,11 +12,20 @@ import { runScenario, runAll } from './runner.js';
 import { SCENARIOS, VERTICALS, getScenario, getVertical, storyCorpus, renderScenario } from './stories.js';
 
 const WEB_DIST = process.env.WEB_DIST || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../web/dist');
-const bad = (res, message, status = 400) => res.status(status).json({ error: status === 404 ? 'not_found' : 'bad_request', message });
+const bad = (res, message, status = 400) => res.status(status).json({ error: status === 404 ? 'not_found' : status === 403 ? 'forbidden' : status === 409 ? 'conflict' : 'bad_request', message });
 const MAX_ADVANCE_S = 10 * 365 * 86400;
 
-export function createApp({ health = createHealth(), world: initialWorld = createWorld({ start: Date.now() }) } = {}) {
+// Mock/Real: this demo is an in-process simulator with no real server to call, so Real is never available in a normal build.
+// `realAvailable` is a test-only seam (never read from the environment) so the switch itself can be tested.
+// `hosted` (HOSTED=1) is the fail-closed hosted build: it cannot be switched.
+const NO_REAL = 'Real mode is not available: this demo simulates the Agent Registry and gateway in-process and has no real server to call.';
+const HOSTED_REASON = 'The hosted build is Mock only and cannot be switched.';
+
+export function createApp({ health = createHealth(), world: initialWorld = createWorld({ start: Date.now() }), hosted = false, realAvailable = false } = {}) {
   let world = initialWorld; // POST /api/reset swaps in a fresh one
+  const canReal = realAvailable === true && !hosted;
+  const modeState = { source: canReal ? 'real' : 'mock' };
+  const info = () => ({ source: modeState.source, realAvailable: canReal, hosted, realReason: hosted ? HOSTED_REASON : canReal ? null : NO_REAL });
   const app = express();
   app.disable('x-powered-by');
   app.use(hostCheck);
@@ -26,6 +35,16 @@ export function createApp({ health = createHealth(), world: initialWorld = creat
   const api = express.Router();
   api.use(express.json({ limit: '8kb' }));
   api.use('/health', health.router);
+  api.get('/info', (_req, res) => res.json(info()));
+  // The Mock/Real switch. Body is exactly {source: "mock" | "real"}. Nothing real exists to call, so Real is refused (409).
+  api.post('/mode', (req, res) => {
+    const b = req.body;
+    if (!b || typeof b !== 'object' || Array.isArray(b) || Object.keys(b).length !== 1 || !['mock', 'real'].includes(b.source)) return bad(res, 'body must be exactly {"source": "mock" or "real"}');
+    if (hosted) return bad(res, HOSTED_REASON, 403);
+    if (b.source === 'real' && !canReal) return bad(res, NO_REAL, 409);
+    modeState.source = b.source;
+    return res.json(info());
+  });
   const send = (res, out) => res.status(out.status).json({ response: out.body, notes: out.notes || [] });
 
   api.get('/catalog', (req, res) => {
