@@ -9,7 +9,7 @@ React + Vite SPA: registry list and register wizard (llm RealKey rule, workload 
 
 ## Mock/Real toggle
 
-Mock/Real toggle in every page header, `GET /api/info`, `POST /api/mode`, `HOSTED=1` lock. Mock only by design: Real is disabled (409 from the API). Vendored `standalone-ui.css` re-synced to the canonical copy (comment line only).
+Mock/Real toggle in every page header, `GET /api/info`, `POST /api/mode`. Mock only by design: Real is disabled (409 from the API). Vendored `standalone-ui.css` re-synced to the canonical copy (comment line only).
 
 ## AR2 - integration and docs
 

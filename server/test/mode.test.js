@@ -21,10 +21,9 @@ async function withMode(fn, opts) {
 
 test('GET /api/info: Mock by default, Real not available, with the reason', () => withMode(async ({ info }) => {
   const i = await info();
-  assert.deepEqual(Object.keys(i).sort(), ['hosted', 'realAvailable', 'realReason', 'source']);
+  assert.deepEqual(Object.keys(i).sort(), ['realAvailable', 'realReason', 'source']);
   assert.equal(i.source, 'mock');
   assert.equal(i.realAvailable, false);
-  assert.equal(i.hosted, false);
   assert.match(i.realReason, /Real mode is not available: .*no real server to call\./);
 }));
 
@@ -59,15 +58,6 @@ test('with Real configured (test seam): Real is the default, and the switch goes
   assert.equal((await info()).source, 'real');
   assert.equal((await fetch(`${base}/api/registry/keys`)).status, 200, 'the data endpoints keep answering after a switch');
 }, { realAvailable: true }));
-
-test('hosted build: fail-closed Mock; every switch is 403 and Real is reported unavailable with the reason', () => withMode(async ({ mode, info }) => {
-  const i = await info();
-  assert.deepEqual({ source: i.source, realAvailable: i.realAvailable, hosted: i.hosted }, { source: 'mock', realAvailable: false, hosted: true });
-  assert.match(i.realReason, /hosted build is Mock only/);
-  assert.equal((await mode({ source: 'real' })).status, 403);
-  assert.equal((await mode({ source: 'mock' })).status, 403);
-  assert.equal((await info()).source, 'mock');
-}, { hosted: true, realAvailable: true }));
 
 test('the mode is per app instance, not module-global', async () => {
   await withMode(async ({ mode, info }) => {
