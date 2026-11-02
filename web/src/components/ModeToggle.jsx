@@ -1,5 +1,5 @@
 // Mock / Real switch in the header of every page. Real is enabled only when the server says it is available; otherwise its
-// tooltip (title) carries the server's reason. Hosted builds cannot be switched.
+// tooltip (title) carries the server's reason.
 export default function ModeToggle({ info, onSelect }) {
   const loading = !info;
   const source = info?.source;

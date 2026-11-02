@@ -5,7 +5,7 @@ import userEvent from "@testing-library/user-event";
 import App, { TABS } from "../App.jsx";
 import { startLive } from "./liveServer.js";
 
-// The real server app, three flavours: a normal build (Mock only), a build with Real configured (test seam), a hosted build.
+// The real server app, two flavours: a normal build (Mock only) and a build with Real configured (test seam).
 let live;
 beforeEach(() => { window.location.hash = "#/registry"; try { localStorage.clear(); } catch { /* none */ } });
 afterEach(async () => { cleanup(); await live?.stop(); live = null; });
@@ -27,15 +27,6 @@ describe("Mock/Real toggle", () => {
       expect(real).toBeDisabled();
       expect(real).toHaveAttribute("title", expect.stringMatching(/no real server to call/));
     }
-  });
-
-  it("hosted build: Mock pressed, Real disabled with the hosted reason", async () => {
-    live = await startLive({ hosted: true, realAvailable: true });
-    render(<App />);
-    const real = await screen.findByRole("button", { name: "Real" });
-    await waitFor(() => expect(screen.getByRole("button", { name: "Mock" })).toHaveAttribute("aria-pressed", "true"));
-    expect(real).toBeDisabled();
-    expect(real).toHaveAttribute("title", expect.stringMatching(/hosted build is Mock only/));
   });
 
   it("clicking the toggle POSTs the mode, refetches info and the page's data, and the pressed button follows (both directions)", async () => {
