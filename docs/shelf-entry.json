@@ -8,7 +8,7 @@
       "description": "Register an AI agent as a non-human identity, grant it to a tool, rotate it by replacement, retire it, and watch the gateway refuse it (401/403/429). Mock only.",
       "url": "http://localhost:5010",
       "healthPath": "/api/health",
-      "composeFile": "/Users/cmuir/Development/agent-registry-demo/docker-compose.yml",
+      "composeFile": "agent-registry-demo-LAB/docker-compose.yml",
       "composeOverlays": [],
       "notes": "Host-run: ./scripts/run.sh (port 5010). Mock only: no tenant, no credentials. Docker: HOST_PORT=5010 docker compose up --build -d (published on 127.0.0.1 only). composeFile is an absolute path on this machine; change it if the repo lives elsewhere."
     }

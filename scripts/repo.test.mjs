@@ -69,7 +69,7 @@ test('docs/safety.md covers every rule in the table and lists the UNVERIFIED one
 test('hygiene: every host in every tracked text file is reserved, every key is sk-MOCK-, no tenant-looking ids, no mermaid', () => {
   for (const f of tracked().filter((x) => !/\.(png|ico|woff2?)$/.test(x) && !x.startsWith('node_modules/'))) {
     const text = read(f);
-    if (f !== "server/test/safety.test.js" && f !== "scripts/check-forbidden-strings.test.mjs") assert.deepEqual(scanHosts(text).filter((h) => !/^(www\.rfc-editor\.org|json-schema\.org|github\.com|0\.0\.0\.0|192\.0\.2\.\d+|localhost.*)$/.test(h) && !h.includes("$")), [], `${f}: real host`);
+    if (f !== "server/test/safety.test.js" && f !== "scripts/check-forbidden-strings.test.mjs") assert.deepEqual(scanHosts(text.replace(/https:\/\/github\.com\/(ping-sandbox\/[A-Za-z0-9._-]+|gitleaks\/gitleaks\/)/g, '')).filter((h) => !/^(www\.rfc-editor\.org|json-schema\.org|0\.0\.0\.0|192\.0\.2\.\d+|localhost.*)$/.test(h) && !h.includes("$")), [], `${f}: real host`);
     if (f !== "server/test/safety.test.js") assert.deepEqual(scanKeys(text), [], `${f}: non-mock key`);
     if (f !== 'scripts/check-forbidden-strings.test.mjs') assert.ok(!/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.test(text), `${f}: uuid-shaped id (tenant or client id?)`);
     if (f !== 'scripts/repo.test.mjs') assert.ok(!/mermaid/i.test(text), `${f}: mermaid`);
@@ -128,9 +128,8 @@ test('web is the real React + Vite UI (no placeholder); package workspaces are s
 
 test('shelf entry compose file points at this repo and exists; run.sh builds the UI before starting', () => {
   const [d] = JSON.parse(read('docs/shelf-entry.json')).demos;
-  // The shelf entry holds the author's absolute path; in any other clone only the file name is checkable.
-  assert.equal(path.basename(d.composeFile), 'docker-compose.yml');
-  assert.ok(path.isAbsolute(d.composeFile));
+  // The shelf entry names the compose file relative to the demo root (the folder the repos sit in); the shelf checks that it exists.
+  assert.equal(d.composeFile, 'agent-registry-demo-LAB/docker-compose.yml');
   assert.ok(fs.existsSync(path.join(ROOT, 'docker-compose.yml')));
   assert.doesNotMatch(d.notes, /later step/);
   assert.match(read('scripts/run.sh'), /npm run build/);
