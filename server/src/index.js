@@ -14,6 +14,6 @@ if (!allPassed(checks)) {
   process.exit(1);
 }
 const host = assertBindAllowed(bindHost(), process.env);
-const { url } = await startHttpServer({ port: resolvePort(), host, app: createApp() });
+const { url } = await startHttpServer({ port: resolvePort(), host, app: createApp({ hosted: process.env.HOSTED === '1' }) });
 console.log(`[agent-registry-demo] mock Agent Registry + gateway at ${url} (loopback, no outbound network)`);
 console.log(`[agent-registry-demo] health: ${url}api/health | registry: ${url}api/registry/keys | gateway: POST ${url}api/gateway/call`);
