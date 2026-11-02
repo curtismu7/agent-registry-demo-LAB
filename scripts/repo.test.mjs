@@ -69,9 +69,9 @@ test('docs/safety.md covers every rule in the table and lists the UNVERIFIED one
 test('hygiene: every host in every tracked text file is reserved, every key is sk-MOCK-, no tenant-looking ids, no mermaid', () => {
   for (const f of tracked().filter((x) => !/\.(png|ico|woff2?)$/.test(x) && !x.startsWith('node_modules/'))) {
     const text = read(f);
-    if (f !== "server/test/safety.test.js") assert.deepEqual(scanHosts(text.replace(/https:\/\/github\.com\/(ping-sandbox\/[A-Za-z0-9._-]+|gitleaks\/gitleaks\/)/g, '')).filter((h) => !/^(www\.rfc-editor\.org|json-schema\.org|0\.0\.0\.0|192\.0\.2\.\d+|localhost.*)$/.test(h) && !h.includes("$")), [], `${f}: real host`);
+    if (f !== "server/test/safety.test.js" && f !== "scripts/check-forbidden-strings.test.mjs") assert.deepEqual(scanHosts(text.replace(/https:\/\/github\.com\/(ping-sandbox\/[A-Za-z0-9._-]+|gitleaks\/gitleaks\/)/g, '')).filter((h) => !/^(www\.rfc-editor\.org|json-schema\.org|0\.0\.0\.0|192\.0\.2\.\d+|localhost.*)$/.test(h) && !h.includes("$")), [], `${f}: real host`);
     if (f !== "server/test/safety.test.js") assert.deepEqual(scanKeys(text), [], `${f}: non-mock key`);
-    assert.ok(!/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.test(text), `${f}: uuid-shaped id (tenant or client id?)`);
+    if (f !== 'scripts/check-forbidden-strings.test.mjs') assert.ok(!/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/.test(text), `${f}: uuid-shaped id (tenant or client id?)`);
     if (f !== 'scripts/repo.test.mjs') assert.ok(!/mermaid/i.test(text), `${f}: mermaid`);
   }
 });
@@ -85,18 +85,26 @@ test('hygiene: .env is ignored, no .env committed, gitleaks pre-commit hook is e
   assert.match(read('package.json'), /core\.hooksPath \.githooks/);
 });
 
-test('CI has the self-hosted runner shape, Node 22 on PRs and 20+22 on main, and the forbidden-strings job', () => {
+test('CI is GitHub-hosted on Node 26 only, with the build, forbidden-strings and gitleaks jobs', () => {
   const ci = read('.github/workflows/ci.yml');
-  assert.match(ci, /\["self-hosted","macOS"\]/);
-  assert.match(ci, /pull_request' && '\[22\]' \|\| '\[20,22\]'/);
+  assert.match(ci, /runs-on: ubuntu-latest/);
+  assert.deepEqual([...new Set([...ci.matchAll(/^\s*runs-on:\s*(.+)$/gm)].map((m) => m[1].trim()))], ['ubuntu-latest']);
+  assert.match(ci, /node: \[26\]/);
+  assert.match(ci, /node-version: 26/);
+  assert.doesNotMatch(ci, /node: \[(?!26\])/);
+  for (const job of ['build', 'forbidden-strings', 'gitleaks']) assert.match(ci, new RegExp(`^  ${job}:`, 'm'), job);
   assert.match(ci, /secrets\.FORBIDDEN_STRINGS/);
+  assert.match(ci, /npm run check:forbidden/);
   assert.match(ci, /gitleaks detect/);
   assert.match(ci, /npm test/);
   assert.ok(!ci.includes('forbidden-strings.txt contents'));
+  const pkg = JSON.parse(read('package.json'));
+  assert.equal(pkg.engines.node, '>=26');
+  assert.equal(pkg.scripts['check:forbidden'], 'node scripts/check-forbidden-strings.mjs');
 });
 
 test('the forbidden-strings list is never read or embedded by the repo', () => {
-  for (const f of tracked().filter((x) => x !== '.github/workflows/ci.yml' && x !== 'scripts/repo.test.mjs')) assert.ok(!read(f).includes('forbidden-strings'), `${f} mentions the forbidden-strings list`);
+  for (const f of tracked().filter((x) => !['.github/workflows/ci.yml', 'scripts/repo.test.mjs', 'package.json', 'docs/forbidden-strings.md', 'scripts/check-forbidden-strings.mjs', 'scripts/check-forbidden-strings.test.mjs', 'scripts/forbidden-allowlist.json'].includes(x))) assert.ok(!read(f).includes('forbidden-strings'), `${f} mentions the forbidden-strings list`);
 });
 
 test('every mutation names a real file and the rules table lists every rule the mutations pin', () => {
