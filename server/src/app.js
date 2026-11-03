@@ -5,11 +5,13 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import { hostCheck, sameOriginWrites, scanHosts, scanKeys } from './safety.js';
+import { createWorkspaces, workspaceMiddleware, DEFAULT_WORKSPACE, WorkspaceError } from './workspaces.js';
 import { createHealth } from './health.js';
 import { createWorld, rotateSafely } from './world.js';
 import { RULES, SCOPES } from './registry.js';
 import { runScenario, runAll } from './runner.js';
 import { SCENARIOS, VERTICALS, getScenario, getVertical, storyCorpus, renderScenario } from './stories.js';
+import { loadCustomer, DEFAULT_CUSTOMER } from './customer.js';
 
 const WEB_DIST = process.env.WEB_DIST || path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../web/dist');
 const bad = (res, message, status = 400) => res.status(status).json({ error: status === 404 ? 'not_found' : status === 409 ? 'conflict' : 'bad_request', message });
@@ -19,19 +21,33 @@ const MAX_ADVANCE_S = 10 * 365 * 86400;
 // `realAvailable` is a test-only seam (never read from the environment) so the switch itself can be tested.
 const NO_REAL = 'Real mode is not available: this demo simulates the Agent Registry and gateway in-process and has no real server to call.';
 
-export function createApp({ health = createHealth(), world: initialWorld = createWorld({ start: Date.now() }), realAvailable = false } = {}) {
-  let world = initialWorld; // POST /api/reset swaps in a fresh one
+export function createApp({ health = createHealth(), world: initialWorld = createWorld({ start: Date.now() }), realAvailable = false, customer = loadCustomer() } = {}) {
+  // Workspaces (rule 13): the x-workspace header scopes the mock world. 'default' keeps
+  // the old single-world behaviour; a new id builds a fresh world; reset clears that id only.
+  const workspaces = createWorkspaces({
+    build: (id) => (id === DEFAULT_WORKSPACE && initialWorld ? initialWorld : createWorld({ start: Date.now() })),
+    reset: () => createWorld({ start: Date.now() }),
+  });
+  if (initialWorld) workspaces.get(DEFAULT_WORKSPACE);
+  let world = initialWorld; // the default workspace's world (also what /api/reset swaps)
   const canReal = realAvailable === true;
   const modeState = { source: canReal ? 'real' : 'mock' };
-  const info = () => ({ source: modeState.source, realAvailable: canReal, realReason: canReal ? null : NO_REAL });
+  const info = () => ({ source: modeState.source, realAvailable: canReal, realReason: canReal ? null : NO_REAL, workspace: DEFAULT_WORKSPACE });
   const app = express();
   app.disable('x-powered-by');
   app.use(hostCheck);
   app.use(sameOriginWrites);
+  app.use(workspaceMiddleware());
   app.use((_req, res, next) => { res.set('X-Content-Type-Options', 'nosniff'); next(); });
 
   const api = express.Router();
   api.use(express.json({ limit: '8kb' }));
+  // Every /api call below (except /health and /info) works on the caller's workspace's world.
+  api.use((req, res, next) => {
+    if (req.path === '/health' || req.path === '/info') return next();
+    try { world = workspaces.get(req.workspaceId); } catch (e) { if (e instanceof WorkspaceError) return bad(res, e.code, e.status); throw e; }
+    next();
+  });
   api.use('/health', health.router);
   api.get('/info', (_req, res) => res.json(info()));
   // The Mock/Real switch. Body is exactly {source: "mock" | "real"}. Nothing real exists to call, so Real is refused (409).
@@ -50,6 +66,7 @@ export function createApp({ health = createHealth(), world: initialWorld = creat
     res.json({
       verticals: VERTICALS.map(({ id, name, cast }) => ({ id, name, cast })),
       vertical: v.id, scopes: SCOPES, rules: RULES,
+      customer: { ...DEFAULT_CUSTOMER, ...customer },
       scenarios: SCENARIOS.map((s) => { const r = renderScenario(s, v); return { id: r.id, slug: r.slug, kind: r.kind, title: r.title, takeaway: r.takeaway, expectedOutcome: r.outcome, rules: r.rules, steps: r.steps.length }; }),
     });
   });
@@ -103,7 +120,11 @@ export function createApp({ health = createHealth(), world: initialWorld = creat
   });
 
   // Reset: forget every key, grant, usage counter and event; the virtual clock starts again from the real time.
-  api.post('/reset', (_req, res) => { world = createWorld({ start: Date.now() }); res.json({ ok: true, reset: 'mock registry, grants, gateway usage and events cleared' }); });
+  api.post('/reset', (req, res) => {
+    workspaces.reset(req.workspaceId); // clears the caller's workspace only
+    world = workspaces.get(req.workspaceId);
+    res.json({ ok: true, reset: 'mock registry, grants, gateway usage and events cleared', workspace: req.workspaceId });
+  });
   api.get('/safety-scan', (_req, res) => {
     const offenders = storyCorpus().map(({ where, text }) => ({ where, hosts: scanHosts(text), keys: scanKeys(text) })).filter((x) => x.hosts.length || x.keys.length);
     res.json({ ok: offenders.length === 0, offenders });
