@@ -7,6 +7,7 @@ import GatewayTab from "./tabs/GatewayTab.jsx";
 import DiagramTab, { START_BOXES } from "./tabs/DiagramTab.jsx";
 import RawTab from "./tabs/RawTab.jsx";
 import ModeToggle from "./components/ModeToggle.jsx";
+import { setPresenter, initPresenter, presenterOn } from "./presenter.js";
 
 export const TABS = [["registry", "Registry"], ["lifecycle", "Lifecycle"], ["gateway", "Gateway"], ["diagram", "Diagram"], ["raw", "Raw"]];
 const read = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
@@ -90,7 +91,9 @@ function Shell({ info, onSelectMode, modeError, catalog, setCatalog, world, refr
   }, [refresh]);
 
   const cycle = () => { const next = { system: "light", light: "dark", dark: "system" }[theme]; setTheme(next); write("areg.theme", next); };
-  const togglePresent = () => { write("areg.present", present ? "0" : "1"); setPresent(!present); };
+  useEffect(() => { initPresenter(); }, []);
+  const togglePresent = useCallback(() => setPresenter(!presenterOn()), []);
+
   const go = (id) => { window.location.hash = `#/${id}`; };
   const onTabKey = (e) => {
     const focused = TABS.findIndex(([id]) => tabRefs.current[id] === document.activeElement);
