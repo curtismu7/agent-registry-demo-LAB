@@ -139,3 +139,21 @@ test('no API response carries a real-looking key or a non-reserved host', async 
     assert.ok(!r.includes('sk-MOCK-REAL-UPSTREAM-PLACEHOLDER'), 'the RealKey is never echoed in a run');
   });
 });
+
+test('workspace header scopes the world: one visitor resets, another keeps their data (rule 13)', async () => {
+  await withServer(async (base) => {
+    const ws = (id) => ({ 'content-type': 'application/json', 'x-workspace': id });
+    // A key in the default workspace is invisible from ws-b.
+    await post(`${base}/api/registry/keys`, { name: 'ws-a-key', spec: mcpSpec() });
+    const inB = await (await fetch(`${base}/api/registry/keys/ws-a-key`, { headers: ws('ws-b') })).status;
+    assert.equal(inB, 404, 'ws-b must not see the default workspace key');
+    // Resetting ws-b does not clear the default workspace.
+    await fetch(`${base}/api/reset`, { method: 'POST', headers: ws('ws-b') });
+    assert.equal((await fetch(`${base}/api/registry/keys/ws-a-key`)).status, 200, 'default keeps its key after the ws-b reset');
+    // Resetting the default clears it.
+    await fetch(`${base}/api/reset`, { method: 'POST' });
+    assert.equal((await fetch(`${base}/api/registry/keys/ws-a-key`)).status, 404);
+    // A malformed workspace id is refused.
+    assert.equal((await fetch(`${base}/api/registry/keys`, { headers: ws('../evil') })).status, 400);
+  });
+});
