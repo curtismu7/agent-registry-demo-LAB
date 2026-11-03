@@ -17,6 +17,7 @@ code { font-size: 0.85rem; overflow-wrap: anywhere; }
 
 .top { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1.25rem; padding: 0.6rem 0; }
 .tools-right { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.seg { display: inline-flex; gap: 0.25rem; }
 .inline { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--muted); }
 .tabbar { display: flex; overflow-x: auto; padding: 0.25rem 0; gap: 0.25rem; border-bottom: 1px solid var(--border); }
 .tab { white-space: nowrap; }

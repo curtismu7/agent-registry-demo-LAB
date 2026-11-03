@@ -51,6 +51,8 @@ Responses from `/api/registry/*` are `{ "response": <wire body>, "notes": [...] 
 | Endpoint | What |
 | --- | --- |
 | `GET /api/health` | `demo-health/1` (public, no-store) |
+| `GET /api/info` | `{ source, realAvailable, realReason }`: the current mode and whether Real can be used |
+| `POST /api/mode` `{source: "mock" \| "real"}` | switch Mock/Real at runtime (anything else 400; `real` 409) |
 | `GET /api/catalog?vertical=` | verticals, scenarios, the rules table with status |
 | `POST /api/run` `{scenario, vertical}` | run one story, returns every step with its trace |
 | `POST /api/run-all` `{vertical}` | run all nine, pass/fail |
@@ -64,6 +66,15 @@ Responses from `/api/registry/*` are `{ "response": <wire body>, "notes": [...] 
 | `GET /api/events` | the small lifecycle event list |
 | `POST /api/reset` | clear all state |
 | `GET /api/safety-scan` | host and key scan of every shipped story |
+
+## Mock and Real
+
+Every page header has a **Mock** / **Real** toggle (the pressed button is the current mode). This demo is **Mock only by design**: the registry and the gateway are in-process simulators, and the server calls nothing, so there is no real server for Real to use. `realAvailable` is always `false`, the **Real** button is disabled, and its tooltip says why.
+
+- `GET /api/info` returns `{ source, realAvailable, realReason }`. `source` is `mock` here.
+- `POST /api/mode` takes exactly `{ "source": "mock" | "real" }`: anything else is `400`; `real` is `409` (nothing real to call). Switching needs no restart and Mock makes no outbound request.
+- The mode lives in memory, per app instance. After a successful switch the page refetches `/api/info`, the catalog and the registry data.
+- No setting makes Real work. The tests use a test-only `createApp({ realAvailable: true })` seam (never read from the environment) to prove the switch goes both ways.
 
 Try it (server running):
 
