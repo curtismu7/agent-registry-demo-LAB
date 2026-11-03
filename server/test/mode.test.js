@@ -19,12 +19,13 @@ async function withMode(fn, opts) {
   assert.deepEqual(guard.attempts, [], 'the switch made no outbound attempt');
 }
 
-test('GET /api/info: Mock by default, Real not available, with the reason', () => withMode(async ({ info }) => {
+test('GET /api/info: Mock by default, Real not available, with the reason; workspace default', () => withMode(async ({ info }) => {
   const i = await info();
-  assert.deepEqual(Object.keys(i).sort(), ['realAvailable', 'realReason', 'source']);
+  assert.deepEqual(Object.keys(i).sort(), ['realAvailable', 'realReason', 'source', 'workspace']);
   assert.equal(i.source, 'mock');
   assert.equal(i.realAvailable, false);
   assert.match(i.realReason, /Real mode is not available: .*no real server to call\./);
+  assert.equal(i.workspace, 'default');
 }));
 
 test('POST /api/mode real is refused with 409 and the mode stays Mock; mock is accepted', () => withMode(async ({ mode, info }) => {

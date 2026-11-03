@@ -1,6 +1,6 @@
 # Agent Registry Lifecycle LAB
 
-Shows the life of a non-human identity, an AI agent, in an Agent Registry: **register** it (name, scopes, custodian, caps, expiry), **grant** it to a tool, **rotate** it safely, **retire** it, and watch the gateway refuse it (401, 403, 429).
+Tier: Demo. Shows the life of a non-human identity, an AI agent, in an Agent Registry: **register** it (name, scopes, custodian, caps, expiry), **grant** it to a tool, **rotate** it safely, **retire** it, and watch the gateway refuse it (401, 403, 429).
 
 Repo: https://github.com/ping-sandbox/agent-registry-demo-LAB
 
