@@ -6,10 +6,10 @@ import { createWorld } from "../../../server/src/world.js";
 
 const realFetch = globalThis.fetch;
 
-export async function startLive() {
+export async function startLive(appOpts = {}) {
   const health = createHealth({ intervalMs: 3_600_000 });
   await health.ready;
-  const { server, url } = await startHttpServer({ port: 0, host: "127.0.0.1", app: createApp({ health, world: createWorld({ start: Date.UTC(2026, 9, 21, 12, 0, 0) }) }) });
+  const { server, url } = await startHttpServer({ port: 0, host: "127.0.0.1", app: createApp({ health, world: createWorld({ start: Date.UTC(2026, 9, 21, 12, 0, 0) }), ...appOpts }) });
   const base = url.replace(/\/$/, "");
   globalThis.fetch = (path, init = {}) => realFetch(`${base}${path}`, { ...init, headers: { origin: base, ...(init.headers || {}) } });
   const api = async (method, path, body) => {

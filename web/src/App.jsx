@@ -1,11 +1,12 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { getCatalog, loadWorld, resetServer, runScenario } from "./lib/api.js";
+import { getCatalog, getInfo, loadWorld, resetServer, runScenario, setMode } from "./lib/api.js";
 import { fill } from "./lib/fill.js";
 import RegistryTab from "./tabs/RegistryTab.jsx";
 import LifecycleTab from "./tabs/LifecycleTab.jsx";
 import GatewayTab from "./tabs/GatewayTab.jsx";
 import DiagramTab, { START_BOXES } from "./tabs/DiagramTab.jsx";
 import RawTab from "./tabs/RawTab.jsx";
+import ModeToggle from "./components/ModeToggle.jsx";
 
 export const TABS = [["registry", "Registry"], ["lifecycle", "Lifecycle"], ["gateway", "Gateway"], ["diagram", "Diagram"], ["raw", "Raw"]];
 const read = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
@@ -16,15 +17,32 @@ export default function App() {
   const [catalog, setCatalog] = useState(null);
   const [world, setWorld] = useState(null);
   const [loadError, setLoadError] = useState(null);
+  const [info, setInfo] = useState(null);
+  const [reload, setReload] = useState(0); // bumped after a switch: the page below remounts and shows freshly fetched data
+  const [modeError, setModeError] = useState("");
   const [tab, setTab] = useState(tabFromHash);
   const [theme, setTheme] = useState(() => (["light", "dark"].includes(read("areg.theme", "")) ? read("areg.theme", "") : "system"));
   const [present, setPresent] = useState(() => read("areg.present", "0") === "1");
 
   const refresh = useCallback(async () => { const w = await loadWorld(); setWorld(w); return w; }, []);
   useEffect(() => { Promise.all([getCatalog(), refresh()]).then(([c]) => setCatalog(c)).catch((e) => setLoadError(e.message)); }, [refresh]);
+  useEffect(() => { getInfo().then(setInfo).catch(() => setInfo(null)); }, []);
   useEffect(() => { const on = () => setTab(tabFromHash()); window.addEventListener("hashchange", on); return () => window.removeEventListener("hashchange", on); }, []);
   useEffect(() => { if (theme === "system") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = theme; }, [theme]);
   useEffect(() => { if (present) document.documentElement.dataset.present = "1"; else delete document.documentElement.dataset.present; }, [present]);
+
+  const selectMode = useCallback(async (source) => {
+    setModeError("");
+    try {
+      setInfo(await setMode(source));
+      const [c] = await Promise.all([getCatalog(), refresh()]);
+      setCatalog(c);
+      setReload((n) => n + 1);
+    } catch (e) {
+      setModeError(e.message);
+      getInfo().then(setInfo).catch(() => {});
+    }
+  }, [refresh]);
 
   const shell = (body) => (
     <>
@@ -37,10 +55,10 @@ export default function App() {
   );
   if (loadError) return shell(<main className="page" id="main" tabIndex={-1}><p className="alert" role="alert">Could not reach the mock server: {loadError}</p></main>);
   if (!catalog || !world) return shell(<main className="page" id="main" tabIndex={-1}><p className="muted" role="status">Loading the mock registry...</p></main>);
-  return shell(<Shell catalog={catalog} setCatalog={setCatalog} world={world} refresh={refresh} tab={tab} theme={theme} setTheme={setTheme} present={present} setPresent={setPresent} />);
+  return shell(<Shell key={reload} info={info} onSelectMode={selectMode} modeError={modeError} catalog={catalog} setCatalog={setCatalog} world={world} refresh={refresh} tab={tab} theme={theme} setTheme={setTheme} present={present} setPresent={setPresent} />);
 }
 
-function Shell({ catalog, setCatalog, world, refresh, tab, theme, setTheme, present, setPresent }) {
+function Shell({ info, onSelectMode, modeError, catalog, setCatalog, world, refresh, tab, theme, setTheme, present, setPresent }) {
   const [run, setRun] = useState(null);
   const [scenarioId, setScenarioId] = useState(catalog.scenarios[0].id);
   const [running, setRunning] = useState(false);
@@ -97,11 +115,13 @@ function Shell({ catalog, setCatalog, world, refresh, tab, theme, setTheme, pres
               {catalog.verticals.map((v) => <option key={v.id} value={v.id}>{v.name}: {v.cast.custodian} and {v.cast.agent}</option>)}
             </select>
           </label>
+          <ModeToggle info={info} onSelect={onSelectMode} />
           <button type="button" className="btn" onClick={resetAll}>Reset</button>
           <button type="button" className="btn" aria-pressed={present} onClick={togglePresent}>Present</button>
           <button type="button" className="btn" onClick={cycle} title="Theme: system, light, dark">Theme: {theme}</button>
         </div>
       </header>
+      {modeError && <p className="alert page" role="alert" data-testid="mode-error">{modeError}</p>}
       <p className="muted page" role="status" data-testid="reset-note" style={{ paddingBottom: 0, paddingTop: 0 }}>{resetNote}</p>
       <div className="tabbar" role="tablist" aria-label="Sections" onKeyDown={onTabKey}>
         {TABS.map(([id, label]) => (

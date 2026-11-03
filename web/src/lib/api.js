@@ -10,6 +10,8 @@ async function must(method, path, body) {
   if (status >= 400) throw new Error(data.message || `HTTP ${status}`);
   return data;
 }
+export const getInfo = () => must("GET", "/api/info");
+export const setMode = (source) => must("POST", "/api/mode", { source });
 export const getCatalog = (vertical) => must("GET", `/api/catalog${vertical ? `?vertical=${encodeURIComponent(vertical)}` : ""}`);
 export const runScenario = (scenario, vertical) => must("POST", "/api/run", { scenario, vertical });
 export const resetServer = () => must("POST", "/api/reset");
