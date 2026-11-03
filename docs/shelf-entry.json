@@ -12,5 +12,8 @@
       "composeOverlays": [],
       "notes": "Host-run: ./scripts/run.sh (port 5010). Mock only: no tenant, no credentials. Docker: HOST_PORT=5010 docker compose up --build -d (published on 127.0.0.1 only). composeFile is an absolute path on this machine; change it if the repo lives elsewhere."
     }
+  ],
+  "pingProducts": [
+    "pingone-privilege"
   ]
 }
