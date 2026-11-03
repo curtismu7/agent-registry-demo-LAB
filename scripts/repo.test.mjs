@@ -3,7 +3,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { validatePack } from './validate-content-pack.mjs';
 import { buildPack } from './build-content-pack.mjs';
@@ -13,7 +13,23 @@ import { RULES } from '../server/src/registry.js';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
-const tracked = () => execFileSync('git', ['ls-files', '-co', '--exclude-standard'], { cwd: ROOT, encoding: 'utf8' }).split('\n').filter((f) => f && !/package-lock\.json$/.test(f) && fs.existsSync(path.join(ROOT, f)));
+// Tracked files. Outside a git clone (e.g. the air-test sync, which ships no .git) walk
+// the tree with the same exclusions instead of failing every hygiene test.
+const SKIP_DIRS = new Set(['node_modules', 'dist', 'build', 'coverage', '.data', '.git']);
+const walkFiles = (dir, out = []) => {
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (e.isDirectory()) { if (!SKIP_DIRS.has(e.name)) walkFiles(path.join(dir, e.name), out); }
+    else out.push(path.relative(ROOT, path.join(dir, e.name)));
+  }
+  return out;
+};
+const tracked = () => {
+  const inGit = spawnSync('git', ['rev-parse', '--git-dir'], { cwd: ROOT }).status === 0;
+  const files = inGit
+    ? execFileSync('git', ['ls-files', '-co', '--exclude-standard'], { cwd: ROOT, encoding: 'utf8' }).split('\n')
+    : walkFiles(ROOT).map((f) => `${f}`);
+  return files.filter((f) => f && !/package-lock\.json$/.test(f) && fs.existsSync(path.join(ROOT, f)));
+};
 
 test('content pack validates and is in sync with the scenario data', () => {
   const pack = JSON.parse(read('content-pack.json'));
