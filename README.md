@@ -8,6 +8,35 @@ Everything is a mock. An in-process registry simulator and a tiny mock gateway r
 
 **Status: step AR2, integration and docs.** Server, simulator, gateway, stories, doctor and tests, a React + Vite UI with five tabs (Registry, Lifecycle, Gateway, Diagram, Raw), a ReactFlow lifecycle diagram, presenter mode and dark/light, Docker packaging (loopback publish pinned by a test), Learning Hub content pack, shelf entry, talk track and an optional owner-run live-check guide.
 
+## Run from a clone
+
+Prerequisites: Node 26. Docker (OrbStack) only for the Docker form.
+
+```
+git clone https://github.com/curtismu7/agent-registry-demo-LAB.git
+cd agent-registry-demo-LAB
+npm ci
+npm run build
+npm run doctor
+npm start
+```
+
+## Ports, and what to do if the port is taken
+
+```
+Ports: agent-registry-demo-LAB listens on 5010 (set with PORT, default 5010).
+Port range for this app: 5010-5049.
+
+If the port is taken:
+1. Find what is using it:
+   lsof -iTCP:5010 -sTCP:LISTEN -n -P
+2. If it is an old copy of this app, stop that process: kill <PID>.
+3. If it is something else, stop it, or start this app on another port:
+   PORT=<other port> npm start
+```
+
+Other variable: `HOST_PORT=5019` (Docker host port). Keep both inside 5010-5049.
+
 ## Run it
 
 ```sh
