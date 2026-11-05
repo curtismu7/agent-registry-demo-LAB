@@ -2,7 +2,7 @@
 
 Tier: Demo. Shows the life of a non-human identity, an AI agent, in an Agent Registry: **register** it (name, scopes, custodian, caps, expiry), **grant** it to a tool, **rotate** it safely, **retire** it, and watch the gateway refuse it (401, 403, 429).
 
-Repo: https://github.com/ping-sandbox/agent-registry-demo-LAB
+Repo: https://github.com/curtismu7/agent-registry-demo-LAB
 
 Everything is a mock. An in-process registry simulator and a tiny mock gateway run inside one Node process. There is no tenant, no credential and no outbound network (a runtime netguard refuses and self-tests that). Every key is an obviously fake `sk-MOCK-...` value.
 

@@ -1,6 +1,6 @@
 # CLAUDE.md: Agent Registry Lifecycle LAB
 
-Tier: Demo. The life of a non-human identity (an AI agent) in an Agent Registry: register, grant, rotate, retire, and the gateway's 401/403/429 refusals. Everything is a mock: an in-process registry simulator and a tiny mock gateway in one Node process, no tenant, no credential, no outbound network (netguard with a self-test). Node 26, Express server (`server/`), React + Vite page (`web/`), loopback only. Repo: https://github.com/ping-sandbox/agent-registry-demo-LAB. Read `README.md` first; the rulebook is `~/Development/STANDALONE-RULES.md` (skill `standalone-demo`).
+Tier: Demo. The life of a non-human identity (an AI agent) in an Agent Registry: register, grant, rotate, retire, and the gateway's 401/403/429 refusals. Everything is a mock: an in-process registry simulator and a tiny mock gateway in one Node process, no tenant, no credential, no outbound network (netguard with a self-test). Node 26, Express server (`server/`), React + Vite page (`web/`), loopback only. Repo: https://github.com/curtismu7/agent-registry-demo-LAB. Read `README.md` first; the rulebook is `~/Development/STANDALONE-RULES.md` (skill `standalone-demo`).
 
 ## Run and test
 - `npm ci`, `npm test`, `npm run doctor`, `npm start` (port 5010 host-run). Docker: `HOST_PORT=5010 docker compose up --build -d`, publishes `127.0.0.1` only.
