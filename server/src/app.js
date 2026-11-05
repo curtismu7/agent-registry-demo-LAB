@@ -137,10 +137,10 @@ export function createApp({ health = createHealth(), world: initialWorld = creat
     console.error('[agent-registry-demo] api error:', err.message);
     return res.status(500).json({ error: 'server_error' });
   });
+  app.get('/api/shelf', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json(shelfInfo()); }); // the header "Shelf" button
   app.use('/api', api);
 
   if (fs.existsSync(path.join(WEB_DIST, 'index.html'))) {
-app.get('/api/shelf', (_req, res) => { res.set('Cache-Control', 'no-store'); res.json(shelfInfo()); }); // the header "Shelf" button
     app.use(express.static(WEB_DIST));
     app.get(/^\/(?!api\/).*/, (_req, res) => res.sendFile(path.join(WEB_DIST, 'index.html')));
   }
