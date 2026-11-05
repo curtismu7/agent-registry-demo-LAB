@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import ShelfLink from "./components/ShelfLink.jsx";
 import { getCatalog, getInfo, loadWorld, resetServer, runScenario, setMode } from "./lib/api.js";
 import { fill } from "./lib/fill.js";
 import RegistryTab from "./tabs/RegistryTab.jsx";
@@ -113,6 +114,7 @@ function Shell({ info, onSelectMode, modeError, catalog, setCatalog, world, refr
       <header className="top">
         <h1><span className="mark" aria-hidden="true">REG</span> Agent Registry Lifecycle</h1>
         <div className="tools-right">
+            <ShelfLink />
           <label className="inline">Persona
             <select value={catalog.vertical} onChange={(e) => pickVertical(e.target.value)} aria-label="Persona and vertical">
               {catalog.verticals.map((v) => <option key={v.id} value={v.id}>{v.name}: {v.cast.custodian} and {v.cast.agent}</option>)}
