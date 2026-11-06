@@ -44,7 +44,7 @@ describe("shell", () => {
   });
   it("cycles the theme and the persona changes the cast", async () => {
     await open();
-    await userEvent.click(screen.getByRole("button", { name: /Theme/ }));
+    await userEvent.selectOptions(screen.getByTestId("theme"), "light");
     expect(document.documentElement.dataset.theme).toBe("light");
     await pick("Persona and vertical", "banking");
     await waitFor(() => expect(screen.getByText(/Alice registers Payments Agent/)).toBeInTheDocument());

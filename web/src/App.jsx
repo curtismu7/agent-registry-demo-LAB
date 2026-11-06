@@ -91,7 +91,7 @@ function Shell({ info, onSelectMode, modeError, catalog, setCatalog, world, refr
     catch (e) { setResetNote(`Reset failed: ${e.message}`); }
   }, [refresh]);
 
-  const cycle = () => { const next = { system: "light", light: "dark", dark: "system" }[theme]; setTheme(next); write("areg.theme", next); };
+  const setThemePersist = (t) => { setTheme(t); write("areg.theme", t); };
   useEffect(() => { initPresenter(); }, []);
   const togglePresent = useCallback(() => setPresenter(!presenterOn()), []);
 
@@ -123,7 +123,13 @@ function Shell({ info, onSelectMode, modeError, catalog, setCatalog, world, refr
           <ModeToggle info={info} onSelect={onSelectMode} />
           <button type="button" className="btn" onClick={resetAll}>Reset</button>
           <button type="button" className="btn" aria-pressed={present} onClick={togglePresent}>Present</button>
-          <button type="button" className="btn" onClick={cycle} title="Theme: system, light, dark">Theme: {theme}</button>
+          <label className="inline">Theme
+            <select value={theme} onChange={(e) => setThemePersist(e.target.value)} data-testid="theme">
+              <option value="system">Auto</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </label>
         </div>
       </header>
       {modeError && <p className="alert page" role="alert" data-testid="mode-error">{modeError}</p>}
