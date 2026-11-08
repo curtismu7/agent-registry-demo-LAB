@@ -157,3 +157,18 @@ test('workspace header scopes the world: one visitor resets, another keeps their
     assert.equal((await fetch(`${base}/api/registry/keys`, { headers: ws('../evil') })).status, 400);
   });
 });
+
+test('GET /api/shelf is reachable without a web build and reads SHELF_URL; POST is refused', async () => {
+  const prev = process.env.SHELF_URL;
+  process.env.SHELF_URL = 'https://shelf.example:8443/';
+  try {
+    await withServer(async (base) => {
+      const r = await fetch(`${base}/api/shelf`);
+      assert.equal(r.status, 200);
+      assert.deepEqual(await r.json(), { shelfUrl: 'https://shelf.example:8443' });
+      assert.notEqual((await fetch(`${base}/api/shelf`, { method: 'POST', headers: { origin: base } })).status, 200);
+    });
+  } finally {
+    if (prev === undefined) delete process.env.SHELF_URL; else process.env.SHELF_URL = prev;
+  }
+});
