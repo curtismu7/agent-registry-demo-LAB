@@ -1,7 +1,8 @@
 // Safety rules. Pure functions plus two tiny middlewares. No I/O.
 //  1. Loopback bind only unless AREG_BIND is set on purpose.
-//  2. Host header must be a loopback name (DNS-rebinding defence).
-//  3. A write must be same-origin: a cross-origin Origin, or a cross-site Sec-Fetch-Site, is refused.
+//  2. Host header must be a loopback name (DNS-rebinding defence), or a name in LAB_ALLOWED_HOSTS (the lab-proxy's name for this app).
+//  3. A write must be same-origin: a cross-origin Origin, or a cross-site Sec-Fetch-Site, is refused. Behind the lab-proxy the
+//     Origin is the proxy's public origin, accepted only when the Host is a LAB_ALLOWED_HOSTS name and X-Forwarded-Host/-Proto agree.
 //  4. Every host in any shipped text is reserved (.invalid / .example / apex of example.com|net|org).
 //  5. Ports are 5010-5049 and never one of the forbidden ones.
 //  6. Every key-looking string is an obviously fake sk-MOCK- value.
@@ -65,15 +66,26 @@ export function cleanText(value, max = 80) {
   return String(value ?? '').replace(/[\u0000-\u001f\u007f-\u009f‪-‮⁦-⁩]/g, ' ').trim().slice(0, max);
 }
 
-export function hostCheck(req, res, next) {
-  const raw = String(req.headers.host || '');
-  const host = raw.startsWith('[') ? raw.slice(0, raw.indexOf(']') + 1) : raw.replace(/:\d+$/, '');
-  if (!isLoopbackHost(host)) return res.status(403).json({ error: 'bad_host', message: 'Host must be a loopback name' });
-  next();
+// Extra Host names this app answers to (family standard): LAB_ALLOWED_HOSTS, comma separated host names that point at this Mac,
+// such as the lab-proxy's agent-registry-demo.local.ping-devops.com. Loopback always works; unset = loopback only.
+const HOSTNAME = /^(?=.{1,253}$)[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/i;
+export function allowedHostsFrom(env = process.env) {
+  const names = String(env.LAB_ALLOWED_HOSTS || '').split(',').map((h) => h.trim().toLowerCase()).filter(Boolean);
+  for (const h of names) if (!HOSTNAME.test(h)) throw new Error(`LAB_ALLOWED_HOSTS: not a host name: ${h}`);
+  return new Set(names);
 }
 
+const hostNameOf = (raw) => (raw.startsWith('[') ? raw.slice(0, raw.indexOf(']') + 1) : raw.replace(/:\d+$/, ''));
+
+export const makeHostCheck = (allowed = new Set()) => function hostCheck(req, res, next) {
+  const host = hostNameOf(String(req.headers.host || ''));
+  if (!(isLoopbackHost(host) || allowed.has(host.toLowerCase()))) return res.status(403).json({ error: 'bad_host', message: 'Host must be a loopback name' });
+  next();
+};
+export const hostCheck = makeHostCheck();
+
 const WRITE = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
-export function sameOriginWrites(req, res, next) {
+export const makeSameOriginWrites = (allowed = new Set()) => function sameOriginWrites(req, res, next) {
   if (!WRITE.has(req.method)) return next();
   const site = req.headers['sec-fetch-site'];
   if (site && site !== 'same-origin' && site !== 'none') return res.status(403).json({ error: 'cross_origin', message: 'writes must be same-origin' });
@@ -81,7 +93,14 @@ export function sameOriginWrites(req, res, next) {
   if (origin) {
     let ok = false;
     try { ok = new URL(origin).host === req.headers.host; } catch { /* malformed */ }
-    if (!ok) return res.status(403).json({ error: 'cross_origin', message: 'writes must be same-origin' });
+    // Behind the lab-proxy the browser's origin is the proxy's public one (local.ping-devops.com:8443) while Host is this app's own name. The proxy sets
+    // X-Forwarded-Host/-Proto; they are believed only when Host is one of the allowed names (loopback does not count), so a request
+    // that did not come through the proxy cannot use them.
+    const xfh = String(req.headers['x-forwarded-host'] || '').toLowerCase();
+    const xfp = String(req.headers['x-forwarded-proto'] || 'https').toLowerCase();
+    const proxied = allowed.has(hostNameOf(String(req.headers.host || '')).toLowerCase()) && xfh !== '' && (xfp === 'https' || xfp === 'http') && origin === `${xfp}://${xfh}`;
+    if (!ok && !proxied) return res.status(403).json({ error: 'cross_origin', message: 'writes must be same-origin' });
   }
   next();
-}
+};
+export const sameOriginWrites = makeSameOriginWrites();
