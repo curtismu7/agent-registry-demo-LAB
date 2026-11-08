@@ -172,3 +172,18 @@ test('GET /api/shelf is reachable without a web build and reads SHELF_URL; POST 
     if (prev === undefined) delete process.env.SHELF_URL; else process.env.SHELF_URL = prev;
   }
 });
+
+test('behind the lab-proxy: a listed Host answers, a proxied write is accepted, and the same forwarded headers on loopback are not', async () => {
+  const LAB = 'areg.lab.example';
+  const fwd = { origin: 'https://proxy.example:8443', 'x-forwarded-host': 'proxy.example:8443', 'x-forwarded-proto': 'https', 'content-type': 'application/json' };
+  await withServer(async (base) => {
+    assert.equal((await rawHttp(`${base}/api/health`, { headers: { host: `${LAB}:5010` } })).status, 200);
+    assert.equal((await rawHttp(`${base}/api/health`, { headers: { host: `${LAB}.evil.example` } })).status, 403);
+    assert.equal((await rawHttp(`${base}/api/reset`, { method: 'POST', headers: { ...fwd, host: `${LAB}:5010` }, body: '{}' })).status, 200);
+    assert.equal((await rawHttp(`${base}/api/reset`, { method: 'POST', headers: { ...fwd, host: `${LAB}:5010`, 'x-forwarded-host': 'evil.example' }, body: '{}' })).status, 403);
+    assert.equal((await rawHttp(`${base}/api/reset`, { method: 'POST', headers: { ...fwd, host: '127.0.0.1:5010' }, body: '{}' })).status, 403);
+  }, { allowedHosts: new Set([LAB]) });
+  await withServer(async (base) => {
+    assert.equal((await rawHttp(`${base}/api/health`, { headers: { host: LAB } })).status, 403, 'unset: loopback only');
+  });
+});

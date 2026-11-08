@@ -19,10 +19,10 @@ export function seeded({ name = 'travel-agent', spec = mcpSpec(), app = 'flights
 export const call = (w, vk, route, extra = {}) => w.gateway.evaluate({ credential: { type: 'bearer', value: vk }, route, ...extra });
 export const mcp = (app = 'flights-mcp', tool = 'search') => ({ kind: 'mcp', app, tool });
 
-export async function withServer(fn) {
+export async function withServer(fn, { allowedHosts } = {}) {
   const health = createHealth({ intervalMs: 3_600_000 });
   await health.ready;
-  const { server, url } = await startHttpServer({ port: 0, host: '127.0.0.1', app: createApp({ health, world: createWorld() }) });
+  const { server, url } = await startHttpServer({ port: 0, host: '127.0.0.1', app: createApp({ health, world: createWorld(), allowedHosts }) });
   try { await fn(url.replace(/\/$/, '')); } finally { health.stop(); await new Promise((r) => server.close(r)); }
 }
 

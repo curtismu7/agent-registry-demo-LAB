@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
-import { hostCheck, sameOriginWrites, scanHosts, scanKeys } from './safety.js';
+import { makeHostCheck, makeSameOriginWrites, scanHosts, scanKeys } from './safety.js';
 import { createWorkspaces, workspaceMiddleware, DEFAULT_WORKSPACE, WorkspaceError } from './workspaces.js';
 import { createHealth } from './health.js';
 import { createWorld, rotateSafely } from './world.js';
@@ -22,7 +22,7 @@ const MAX_ADVANCE_S = 10 * 365 * 86400;
 // `realAvailable` is a test-only seam (never read from the environment) so the switch itself can be tested.
 const NO_REAL = 'Real mode is not available: this demo simulates the Agent Registry and gateway in-process and has no real server to call.';
 
-export function createApp({ health = createHealth(), world: initialWorld = createWorld({ start: Date.now() }), realAvailable = false, customer = loadCustomer() } = {}) {
+export function createApp({ health = createHealth(), world: initialWorld = createWorld({ start: Date.now() }), realAvailable = false, customer = loadCustomer(), allowedHosts = new Set() } = {}) {
   // Workspaces (rule 13): the x-workspace header scopes the mock world. 'default' keeps
   // the old single-world behaviour; a new id builds a fresh world; reset clears that id only.
   const workspaces = createWorkspaces({
@@ -36,8 +36,8 @@ export function createApp({ health = createHealth(), world: initialWorld = creat
   const info = () => ({ source: modeState.source, realAvailable: canReal, realReason: canReal ? null : NO_REAL, workspace: DEFAULT_WORKSPACE });
   const app = express();
   app.disable('x-powered-by');
-  app.use(hostCheck);
-  app.use(sameOriginWrites);
+  app.use(makeHostCheck(allowedHosts));
+  app.use(makeSameOriginWrites(allowedHosts));
   app.use(workspaceMiddleware());
   app.use((_req, res, next) => { res.set('X-Content-Type-Options', 'nosniff'); next(); });
 
