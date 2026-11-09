@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ShelfLink from "./components/ShelfLink.jsx";
+import ReturnLink from "./return-link/ReturnLink.jsx";
+import { readReturnContext } from "./return-link/returnTargets.js";
+import { scenarioFor, verticalFor } from "./handoffMap.js";
 import { getCatalog, getInfo, loadWorld, resetServer, runScenario, setMode } from "./lib/api.js";
 import { fill } from "./lib/fill.js";
 import RegistryTab from "./tabs/RegistryTab.jsx";
@@ -16,18 +19,20 @@ const write = (k, v) => { try { localStorage.setItem(k, v); } catch { /* not rem
 const tabFromHash = () => { const id = window.location.hash.replace(/^#\/?/, "").split("?")[0]; return TABS.some(([t]) => t === id) ? id : "registry"; };
 
 export default function App() {
+  // Opened from Customer Agent LAB: preselect the matching story (Lifecycle tab) and persona (handoffMap.js), once, on load.
+  const [handoff] = useState(() => readReturnContext(window.location.search));
   const [catalog, setCatalog] = useState(null);
   const [world, setWorld] = useState(null);
   const [loadError, setLoadError] = useState(null);
   const [info, setInfo] = useState(null);
   const [reload, setReload] = useState(0); // bumped after a switch: the page below remounts and shows freshly fetched data
   const [modeError, setModeError] = useState("");
-  const [tab, setTab] = useState(tabFromHash);
+  const [tab, setTab] = useState(() => (!window.location.hash && scenarioFor(handoff) ? "lifecycle" : tabFromHash()));
   const [theme, setTheme] = useState(() => (["light", "dark"].includes(read("areg.theme", "")) ? read("areg.theme", "") : "system"));
   const [present, setPresent] = useState(() => read("areg.present", "0") === "1");
 
   const refresh = useCallback(async () => { const w = await loadWorld(); setWorld(w); return w; }, []);
-  useEffect(() => { Promise.all([getCatalog(), refresh()]).then(([c]) => setCatalog(c)).catch((e) => setLoadError(e.message)); }, [refresh]);
+  useEffect(() => { Promise.all([getCatalog(verticalFor(handoff) || undefined), refresh()]).then(([c]) => setCatalog(c)).catch((e) => setLoadError(e.message)); }, [refresh, handoff]);
   useEffect(() => { getInfo().then(setInfo).catch(() => setInfo(null)); }, []);
   useEffect(() => { const on = () => setTab(tabFromHash()); window.addEventListener("hashchange", on); return () => window.removeEventListener("hashchange", on); }, []);
   useEffect(() => { if (theme === "system") delete document.documentElement.dataset.theme; else document.documentElement.dataset.theme = theme; }, [theme]);
@@ -52,17 +57,18 @@ export default function App() {
       <div className="banner" role="note" data-testid="banner">
         <strong>Mock only: simulated registry, not the real product.</strong> An in-process stand-in for the Agent Registry and gateway. No tenant, no outbound network, every key is an obviously fake <code>sk-MOCK-</code> value, and every address is a reserved <code>.invalid</code> name.
       </div>
+      <ReturnLink app="agent-registry-demo" />
       {body}
     </>
   );
   if (loadError) return shell(<main className="page" id="main" tabIndex={-1}><p className="alert" role="alert">Could not reach the mock server: {loadError}</p></main>);
   if (!catalog || !world) return shell(<main className="page" id="main" tabIndex={-1}><p className="muted" role="status">Loading the mock registry...</p></main>);
-  return shell(<Shell key={reload} info={info} onSelectMode={selectMode} modeError={modeError} catalog={catalog} setCatalog={setCatalog} world={world} refresh={refresh} tab={tab} theme={theme} setTheme={setTheme} present={present} setPresent={setPresent} />);
+  return shell(<Shell key={reload} info={info} onSelectMode={selectMode} modeError={modeError} catalog={catalog} setCatalog={setCatalog} world={world} refresh={refresh} tab={tab} theme={theme} setTheme={setTheme} present={present} setPresent={setPresent} initialScenario={scenarioFor(handoff)} />);
 }
 
-function Shell({ info, onSelectMode, modeError, catalog, setCatalog, world, refresh, tab, theme, setTheme, present, setPresent }) {
+function Shell({ info, onSelectMode, modeError, catalog, setCatalog, world, refresh, tab, theme, setTheme, present, setPresent, initialScenario }) {
   const [run, setRun] = useState(null);
-  const [scenarioId, setScenarioId] = useState(catalog.scenarios[0].id);
+  const [scenarioId, setScenarioId] = useState(() => (catalog.scenarios.some((s) => s.id === initialScenario) ? initialScenario : catalog.scenarios[0].id));
   const [running, setRunning] = useState(false);
   const [runError, setRunError] = useState(null);
   const [cursor, setCursor] = useState(-1);
@@ -114,6 +120,7 @@ function Shell({ info, onSelectMode, modeError, catalog, setCatalog, world, refr
       <header className="top">
         <h1><span className="mark" aria-hidden="true">REG</span> Agent Registry Lifecycle</h1>
         <div className="tools-right">
+            <ReturnLink app="agent-registry-demo" variant="header" />
             <ShelfLink />
           <label className="inline">Persona
             <select value={catalog.vertical} onChange={(e) => pickVertical(e.target.value)} aria-label="Persona and vertical">
