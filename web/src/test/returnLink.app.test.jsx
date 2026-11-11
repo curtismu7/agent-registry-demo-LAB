@@ -7,6 +7,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import App from "../App.jsx";
 import ReturnLink from "../return-link/ReturnLink.jsx";
+import { returnLinkFor } from "../return-link/returnTargets.js";
 import { UC_SCENARIO, VERTICAL_MAP, scenarioFor, verticalFor } from "../handoffMap.js";
 import { SCENARIOS, VERTICALS } from "../../../server/src/stories.js";
 import { startLive } from "./liveServer.js";
@@ -59,6 +60,12 @@ describe("return link", () => {
     expect(screen.getByRole("tab", { name: "Registry" })).toHaveAttribute("aria-selected", "true");
     expect(screen.getByLabelText("Persona and vertical")).toHaveValue(VERTICALS[0].id);
   });
+  it("?from=ai-demo-standalone: the strip names AI Demo Standalone; Back goes to /ai-demo-standalone/", () => {
+    window.history.replaceState(null, "", "/?from=ai-demo-standalone&uc=UC-NHI2");
+    expect(returnLinkFor("agent-registry-demo").label).toBe("AI Demo Standalone");
+    expect(returnLinkFor("agent-registry-demo").href).toBe("http://127.0.0.1:7810/?returned=agent-registry-demo&uc=UC-NHI2");
+  });
+
 
   it("no from, an unknown from or a bad id: no strip, no button", async () => {
     for (const q of ["/", "/?from=elsewhere&uc=UC19", "/?from=customer-agent&uc=%3Cb%3E", "/?from=customer-agent&uc=UC19&vertical=a%20b"]) {
