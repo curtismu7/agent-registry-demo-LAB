@@ -14,7 +14,7 @@ export function ScenarioBar({ app }) {
           {catalog.scenarios.map((s) => <option key={s.id} value={s.id}>{s.id} {s.title}</option>)}
         </select>
       </label>
-      <button type="button" className="btn primary" disabled={running} onClick={doRun}>Run story</button>
+      <button type="button" className="btn" disabled={running} onClick={doRun}>Run story</button>
     </div>
   );
 }
