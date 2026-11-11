@@ -21,7 +21,7 @@ async function withMode(fn, opts) {
 
 test('GET /api/info: Mock by default, Real not available, with the reason; workspace default', () => withMode(async ({ info }) => {
   const i = await info();
-  assert.deepEqual(Object.keys(i).sort(), ['realAvailable', 'realReason', 'source', 'workspace']);
+  assert.deepEqual(Object.keys(i).sort(), ['realAvailable', 'realReason', 'source', 'version', 'workspace']);
   assert.equal(i.source, 'mock');
   assert.equal(i.realAvailable, false);
   assert.match(i.realReason, /Real mode is not available: .*no real server to call\./);
