@@ -33,7 +33,7 @@ export function createApp({ health = createHealth(), world: initialWorld = creat
   let world = initialWorld; // the default workspace's world (also what /api/reset swaps)
   const canReal = realAvailable === true;
   const modeState = { source: canReal ? 'real' : 'mock' };
-  const info = () => ({ source: modeState.source, realAvailable: canReal, realReason: canReal ? null : NO_REAL, workspace: DEFAULT_WORKSPACE });
+  const info = () => ({ source: modeState.source, realAvailable: canReal, realReason: canReal ? null : NO_REAL, workspace: DEFAULT_WORKSPACE, version: (() => { try { return JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version || null; } catch { return null; } })() });
   const app = express();
   app.disable('x-powered-by');
   app.use(makeHostCheck(allowedHosts));

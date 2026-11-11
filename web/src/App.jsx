@@ -10,7 +10,7 @@ import LifecycleTab from "./tabs/LifecycleTab.jsx";
 import GatewayTab from "./tabs/GatewayTab.jsx";
 import DiagramTab, { START_BOXES } from "./tabs/DiagramTab.jsx";
 import RawTab from "./tabs/RawTab.jsx";
-import ModeToggle from "./components/ModeToggle.jsx";
+import TopMenu from "./top-menu/TopMenu.jsx";
 import { setPresenter, initPresenter, presenterOn } from "./presenter.js";
 
 export const TABS = [["registry", "Registry"], ["lifecycle", "Lifecycle"], ["gateway", "Gateway"], ["diagram", "Diagram"], ["raw", "Raw"]];
@@ -122,21 +122,15 @@ function Shell({ info, onSelectMode, modeError, catalog, setCatalog, world, refr
         <div className="tools-right">
             <ReturnLink app="agent-registry-demo" variant="header" />
             <ShelfLink />
-          <label className="inline">Persona
-            <select value={catalog.vertical} onChange={(e) => pickVertical(e.target.value)} aria-label="Persona and vertical">
-              {catalog.verticals.map((v) => <option key={v.id} value={v.id}>{v.name}: {v.cast.custodian} and {v.cast.agent}</option>)}
-            </select>
-          </label>
-          <ModeToggle info={info} onSelect={onSelectMode} />
-          <button type="button" className="btn" onClick={resetAll}>Reset</button>
-          <button type="button" className="btn" aria-pressed={present} onClick={togglePresent}>Present</button>
-          <label className="inline">Theme
-            <select value={theme} onChange={(e) => setThemePersist(e.target.value)} data-testid="theme">
-              <option value="system">Auto</option>
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-            </select>
-          </label>
+          <TopMenu
+            mode={{ value: info?.source === "real" ? "real" : "mock", onChange: onSelectMode, realAvailable: info ? info.realAvailable === true : null, realHint: info?.realReason }}
+            vertical={{ value: catalog.vertical, onChange: pickVertical, options: catalog.verticals.map((v) => v.id) }}
+            theme={{ value: theme === "system" ? "auto" : theme, onChange: setThemePersist }}
+            present={{ active: present, onToggle: togglePresent, label: "Present" }}
+            help={{ href: "https://github.com/curtismu7/agent-registry-demo-LAB#readme" }}
+            version={info?.version || null}
+            onReset={resetAll}
+          />
         </div>
       </header>
       {modeError && <p className="alert page" role="alert" data-testid="mode-error">{modeError}</p>}

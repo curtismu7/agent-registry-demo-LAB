@@ -20,12 +20,10 @@ describe("Mock/Real toggle", () => {
       await screen.findByRole("tablist");
       await userEvent.click(screen.getByRole("tab", { name: label }));
       await waitFor(() => expect(screen.getByRole("tab", { name: label })).toHaveAttribute("aria-selected", "true"));
-      const mock = await within(header(container)).findByRole("button", { name: "Mock" });
-      await waitFor(() => expect(mock).toHaveAttribute("aria-pressed", "true"));
-      const real = within(header(container)).getByRole("button", { name: "Real" });
-      expect(real).toHaveAttribute("aria-pressed", "false");
-      expect(real).toBeDisabled();
-      expect(real).toHaveAttribute("title", expect.stringMatching(/no real server to call/));
+      const mode = await within(header(container)).findByTestId("mode-select");
+      await waitFor(() => expect(mode).toHaveValue("mock"));
+      expect(mode.querySelector('option[value="real"]').disabled).toBe(true);
+      expect(mode.querySelector('option[value="real"]')).toHaveAttribute("title", expect.stringMatching(/no real server to call/));
     }
   });
 
@@ -33,22 +31,21 @@ describe("Mock/Real toggle", () => {
     live = await startLive({ realAvailable: true });
     const calls = counting();
     render(<App />);
-    const real = await screen.findByRole("button", { name: "Real" });
-    await waitFor(() => expect(real).toHaveAttribute("aria-pressed", "true"));
+    const mode = await screen.findByTestId("mode-select");
+    await waitFor(() => expect(mode).toHaveValue("real"));
     await screen.findByRole("tablist");
     const count = (c) => calls.filter((x) => x === c).length;
     const before = { keys: count("GET /api/registry/keys"), catalog: count("GET /api/catalog"), info: count("GET /api/info") };
 
-    await userEvent.click(screen.getByRole("button", { name: "Mock" }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "Mock" })).toHaveAttribute("aria-pressed", "true"));
-    expect(screen.getByRole("button", { name: "Real" })).toHaveAttribute("aria-pressed", "false");
+    await userEvent.selectOptions(screen.getByTestId("mode-select"), "mock");
+    await waitFor(() => expect(screen.getByTestId("mode-select")).toHaveValue("mock"));
     await waitFor(() => expect(count("GET /api/registry/keys")).toBe(before.keys + 1));
     expect(count("POST /api/mode")).toBe(1);
     expect(count("GET /api/catalog")).toBe(before.catalog + 1);
     expect((await live.api("GET", "/api/info")).data.source).toBe("mock");
 
-    await userEvent.click(screen.getByRole("button", { name: "Real" }));
-    await waitFor(() => expect(screen.getByRole("button", { name: "Real" })).toHaveAttribute("aria-pressed", "true"));
+    await userEvent.selectOptions(screen.getByTestId("mode-select"), "real");
+    await waitFor(() => expect(screen.getByTestId("mode-select")).toHaveValue("real"));
     await waitFor(() => expect(count("GET /api/registry/keys")).toBe(before.keys + 2));
     expect(count("POST /api/mode")).toBe(2);
     expect((await live.api("GET", "/api/info")).data.source).toBe("real");
@@ -57,12 +54,12 @@ describe("Mock/Real toggle", () => {
   it("a refused switch shows the server's message and leaves the pressed button alone", async () => {
     live = await startLive({ realAvailable: true });
     render(<App />);
-    const real = await screen.findByRole("button", { name: "Real" });
-    await waitFor(() => expect(real).toBeEnabled());
+    const mode = await screen.findByTestId("mode-select");
+    await waitFor(() => expect(mode.querySelector('option[value="real"]').disabled).toBe(false));
     const f = globalThis.fetch;
     globalThis.fetch = (u, i = {}) => (u === "/api/mode" ? Promise.resolve({ status: 409, json: async () => ({ message: "Real mode is not available: nothing to call." }) }) : f(u, i));
-    await userEvent.click(screen.getByRole("button", { name: "Mock" }));
+    await userEvent.selectOptions(screen.getByTestId("mode-select"), "mock");
     expect(await screen.findByTestId("mode-error")).toHaveTextContent("Real mode is not available: nothing to call.");
-    expect(screen.getByRole("button", { name: "Real" })).toHaveAttribute("aria-pressed", "true");
+    await waitFor(() => expect(screen.getByTestId("mode-select")).toHaveValue("real"));
   });
 });

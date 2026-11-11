@@ -44,9 +44,9 @@ describe("shell", () => {
   });
   it("cycles the theme and the persona changes the cast", async () => {
     await open();
-    await userEvent.selectOptions(screen.getByTestId("theme"), "light");
+    await userEvent.selectOptions(screen.getByTestId("theme-select"), "light");
     expect(document.documentElement.dataset.theme).toBe("light");
-    await pick("Persona and vertical", "banking");
+    await userEvent.selectOptions(screen.getByTestId("vertical-select"), "banking");
     await waitFor(() => expect(screen.getByText(/Alice registers Payments Agent/)).toBeInTheDocument());
   });
 });

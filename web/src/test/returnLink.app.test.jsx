@@ -49,7 +49,7 @@ describe("return link", () => {
     expect(document.querySelector("header.top .tools-right > button.return-link--header")).not.toBeNull();
     expect(screen.getByRole("tab", { name: "Lifecycle" })).toHaveAttribute("aria-selected", "true");
     await waitFor(() => expect(screen.getByLabelText("Story")).toHaveValue("S02"));
-    expect(screen.getByLabelText("Persona and vertical")).toHaveValue("banking");
+    expect(screen.getByTestId("vertical-select")).toHaveValue("banking");
   });
 
   it("UC-NHI2 (no matching story): strip only, defaults kept", async () => {
@@ -58,7 +58,7 @@ describe("return link", () => {
     expect(screen.getByRole("note", NOTE)).toBeTruthy();
     await screen.findByRole("tablist");
     expect(screen.getByRole("tab", { name: "Registry" })).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByLabelText("Persona and vertical")).toHaveValue(VERTICALS[0].id);
+    expect(screen.getByTestId("vertical-select")).toHaveValue(VERTICALS[0].id);
   });
   it("?from=ai-demo-standalone: the strip names AI Demo Standalone; Back goes to /ai-demo-standalone/", () => {
     window.history.replaceState(null, "", "/?from=ai-demo-standalone&uc=UC-NHI2");
