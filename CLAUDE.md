@@ -14,7 +14,7 @@ Tier: Demo. The life of a non-human identity (an AI agent) in an Agent Registry:
 - Node 26 only. CI is GitHub-hosted. Docker is OrbStack, never Docker Desktop.
 - Never edit the shared `~/Development/AI-DEMO2` checkout; it is a read-only source.
 - Do not use `crypto.generateKeyPairSync('ec')` or async EC `generateKeyPair` (SIGABRT on Node 20 CI); use `createECDH` + `createPrivateKey`.
-- Commits end with the Co-Authored-By line from the session's attribution reminder.
+- No AI attribution anywhere (owner, 2026-11-07): no Co-Authored-By trailer and no "Generated with" line in commits, PR bodies or files; CI runs `scripts/check-no-ai-attribution.sh`.
 
 ## Shelf
 `docs/shelf-entry.json` registers this app. Run the parent's `scripts/check-drift.sh <this clone>` before a PR.
