@@ -9,7 +9,7 @@ import { startLive } from "./liveServer.js";
 let live;
 beforeEach(() => { window.location.hash = "#/registry"; try { localStorage.clear(); } catch { /* none */ } });
 afterEach(async () => { cleanup(); await live?.stop(); live = null; });
-const header = (container) => container.querySelector("header.top");
+const header = (container) => container.querySelector("header.shell-bar");
 const counting = () => { const calls = []; const f = globalThis.fetch; globalThis.fetch = (u, i = {}) => { calls.push(`${i.method || "GET"} ${u}`); return f(u, i); }; return calls; };
 
 describe("Mock/Real toggle", () => {

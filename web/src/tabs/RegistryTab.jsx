@@ -27,7 +27,7 @@ export default function RegistryTab({ app }) {
       <section className="card" aria-label="Registered agents">
         <div className="controls">
           <h3>Registered agents ({world.keys.length})</h3>
-          <button type="button" className="btn primary" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? "Close the wizard" : "Register an agent"}</button>
+          <button type="button" className="btn" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? "Close the wizard" : "Register an agent"}</button>
         </div>
         {world.keys.length === 0 ? <p className="muted" data-testid="empty">No agents yet. Register one, or run a story on the Lifecycle tab.</p> : (
           <table className="keytable">
@@ -213,7 +213,7 @@ function GrantPanel({ app, k, onResult }) {
       <p className="small muted">The grant names the key, not its value. Selecting the app is the grant; leave tools empty for all tools.</p>
       <label className="field" htmlFor="g-app">App<input id="g-app" type="text" value={appName} onChange={(e) => setAppName(e.target.value)} /></label>
       <label className="field" htmlFor="g-tools">Tools (comma separated)<input id="g-tools" type="text" value={tools} onChange={(e) => setTools(e.target.value)} /></label>
-      <button type="submit" className="btn primary">Grant</button>
+      <button type="submit" className="btn">Grant</button>
     </form>
   );
 }
@@ -259,7 +259,7 @@ function RotatePanel({ app, k }) {
       <form onSubmit={rotate} aria-label="Rotate by replacement form">
         <label className="field" htmlFor="r-name">Successor name (must differ: two keys sharing a name was never tested)<input id="r-name" type="text" value={name} onChange={(e) => setName(e.target.value)} /></label>
         {llm && <label className="field" htmlFor="r-real">Upstream RealKey you hold (mock placeholder only)<input id="r-real" type="text" value={realKey} onChange={(e) => setRealKey(e.target.value)} placeholder="needed to recreate an llm key" /></label>}
-        <button type="submit" className="btn primary">Start rotation</button>
+        <button type="submit" className="btn">Start rotation</button>
       </form>
       {out && (
         <>

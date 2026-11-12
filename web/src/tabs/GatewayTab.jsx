@@ -111,11 +111,11 @@ function Result({ r }) {
       <p className={`verdict ${r.status === 200 ? "ok" : r.status === 429 ? "hold" : "deny"}`} role="status">{r.status} {REASON[r.status] || ""}: call {outcome(r.status)}</p>
       <div className="cols">
         <div>
-          <h4>On the wire (what the agent sees)</h4>
+          <h3>On the wire (what the agent sees)</h3>
           <Inert block text={t.response || pretty(r.body)} testid="gw-response" />
         </div>
         <div>
-          <h4>Gateway log (only the operator sees this)</h4>
+          <h3>Gateway log (only the operator sees this)</h3>
           <Inert block text={(t.gatewayLog || []).join("\n") || "(no log lines)"} testid="gw-log" />
           {(t.notes || []).map((n, i) => <p key={i} className="small muted"><Inert text={n} /></p>)}
           <p className="small muted">traceparent <code data-testid="traceparent">{t.traceparent}</code></p>
