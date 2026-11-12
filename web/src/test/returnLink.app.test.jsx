@@ -46,7 +46,7 @@ describe("return link", () => {
     expect(screen.getByTestId("banner").nextElementSibling).toBe(strip);
     await screen.findByRole("tablist");
     expect(screen.getAllByRole("button", { name: /Back to Customer Agent LAB/ })).toHaveLength(2);
-    expect(document.querySelector("header.top .tools-right > button.return-link--header")).not.toBeNull();
+    expect(document.querySelector("header.shell-bar .tools-right > button.return-link--header")).not.toBeNull();
     expect(screen.getByRole("tab", { name: "Lifecycle" })).toHaveAttribute("aria-selected", "true");
     await waitFor(() => expect(screen.getByLabelText("Story")).toHaveValue("S02"));
     expect(screen.getByTestId("vertical-select")).toHaveValue("banking");

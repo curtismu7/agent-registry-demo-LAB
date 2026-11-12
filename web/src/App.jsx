@@ -61,12 +61,12 @@ export default function App() {
       {body}
     </>
   );
-  if (loadError) return shell(<main className="page" id="main" tabIndex={-1}><p className="alert" role="alert">Could not reach the mock server: {loadError}</p></main>);
-  if (!catalog || !world) return shell(<main className="page" id="main" tabIndex={-1}><p className="muted" role="status">Loading the mock registry...</p></main>);
-  return shell(<Shell key={reload} info={info} onSelectMode={selectMode} modeError={modeError} catalog={catalog} setCatalog={setCatalog} world={world} refresh={refresh} tab={tab} theme={theme} setTheme={setTheme} present={present} setPresent={setPresent} initialScenario={scenarioFor(handoff)} />);
+  return shell(<Shell key={reload} loadError={loadError} ready={Boolean(catalog && world)} info={info} onSelectMode={selectMode} modeError={modeError} catalog={catalog} setCatalog={setCatalog} world={world} refresh={refresh} tab={tab} theme={theme} setTheme={setTheme} present={present} setPresent={setPresent} initialScenario={scenarioFor(handoff)} />);
 }
 
-function Shell({ info, onSelectMode, modeError, catalog, setCatalog, world, refresh, tab, theme, setTheme, present, setPresent, initialScenario }) {
+function Shell({ loadError, ready, info, onSelectMode, modeError, catalog, setCatalog, world, refresh, tab, theme, setTheme, present, setPresent, initialScenario }) {
+  if (loadError) return <main className="page" id="main" tabIndex={-1}><p className="alert" role="alert">Could not reach the mock server: {loadError}</p></main>;
+  if (!ready) return <main className="page" id="main" tabIndex={-1}><p className="muted" role="status">Loading the mock registry...</p></main>;
   const [run, setRun] = useState(null);
   const [scenarioId, setScenarioId] = useState(() => (catalog.scenarios.some((s) => s.id === initialScenario) ? initialScenario : catalog.scenarios[0].id));
   const [running, setRunning] = useState(false);
@@ -117,25 +117,30 @@ function Shell({ info, onSelectMode, modeError, catalog, setCatalog, world, refr
 
   return (
     <>
-      <header className="top">
-        <h1><span className="mark" aria-hidden="true">REG</span> Agent Registry Lifecycle</h1>
-        <div className="tools-right">
+      <header className="shell-bar">
+        <span className="shell-brand">
+          <span className="shell-logo" aria-hidden="true">AR</span>
+          <h1>Agent Registry Lifecycle</h1>
+        </span>
+        <div className="tools-right shell-right">
             <ReturnLink app="agent-registry-demo" variant="header" />
             <ShelfLink />
-          <TopMenu
-            mode={{ value: info?.source === "real" ? "real" : "mock", onChange: onSelectMode, realAvailable: info ? info.realAvailable === true : null, realHint: info?.realReason }}
-            vertical={{ value: catalog.vertical, onChange: pickVertical, options: catalog.verticals.map((v) => v.id) }}
-            theme={{ value: theme === "system" ? "auto" : theme, onChange: setThemePersist }}
-            present={{ active: present, onToggle: togglePresent, label: "Present" }}
-            help={{ href: "https://github.com/curtismu7/agent-registry-demo-LAB#readme" }}
-            version={info?.version || null}
-            onReset={resetAll}
-          />
+          <span className="mode-toggle" style={{ display: "contents" }}>
+            <TopMenu
+              mode={{ value: info?.source === "real" ? "real" : "mock", onChange: onSelectMode, realAvailable: info ? info.realAvailable === true : null, realHint: info?.realReason }}
+              vertical={{ value: catalog.vertical, onChange: pickVertical, options: catalog.verticals.map((v) => v.id) }}
+              theme={{ value: theme === "system" ? "auto" : theme, onChange: setThemePersist }}
+              present={{ active: present, onToggle: togglePresent, label: "Present" }}
+              help={{ href: "https://github.com/curtismu7/agent-registry-demo-LAB#readme" }}
+              version={info?.version || null}
+              onReset={resetAll}
+            />
+          </span>
         </div>
       </header>
       {modeError && <p className="alert page" role="alert" data-testid="mode-error">{modeError}</p>}
       <p className="muted page" role="status" data-testid="reset-note" style={{ paddingBottom: 0, paddingTop: 0 }}>{resetNote}</p>
-      <div className="tabbar" role="tablist" aria-label="Sections" onKeyDown={onTabKey}>
+      <div className="tabbar shell-nav" role="tablist" aria-label="Sections" onKeyDown={onTabKey}>
         {TABS.map(([id, label]) => (
           <button key={id} id={`tab-${id}`} ref={(el) => { tabRefs.current[id] = el; }} type="button" role="tab" aria-selected={id === tab} aria-controls="main" tabIndex={id === tab ? 0 : -1} className="tab" onClick={() => go(id)}>{label}</button>
         ))}

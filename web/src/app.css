@@ -4,7 +4,7 @@
 
 :root[data-present="1"] body { font-size: 20px; }
 :root[data-present="1"] [data-admin-only] { display: none; }
-.page { max-width: 76rem; margin: 0 auto; padding: 1rem 0; }
+.page { max-width: 1100px; margin: 0 auto; padding: 1rem 0; }
 h1 { margin: 0; font-size: 1.3rem; display: flex; align-items: center; gap: 0.6rem; }
 h2 { margin: 0.5rem 0 0.25rem; font-size: 1.6rem; }
 h3 { margin: 0 0 0.5rem; font-size: 1.1rem; }
@@ -15,7 +15,13 @@ a, a:visited { color: var(--status-info); }
 code { font-size: 0.85rem; overflow-wrap: anywhere; }
 .mark { display: inline-grid; place-items: center; padding: 0.1rem 0.45rem; border-radius: 4px; background: var(--accent); color: var(--on-accent); font: 700 0.8rem var(--font-mono); letter-spacing: 0.08em; }
 
-.top { position: relative; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem 1.25rem; padding: 0.6rem 0; }
+/* Shell bar (STANDALONE-UI-PATTERNS.md section 1): Core Dark in both themes, Ping Red gradient rule, full-bleed. */
+.shell-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1.25rem; padding: 0.6rem 1.25rem; margin: 0 -16px;
+  background: var(--box-dark); color: var(--on-box); border-bottom: 3px solid transparent; border-image: var(--accent-gradient) 1; }
+.shell-bar :focus-visible { outline: 3px solid var(--on-box); outline-offset: 2px; }
+.shell-bar h1 { color: var(--on-box); }
+.shell-nav { border-bottom: none; flex: 1 1 100%; padding: 0.25rem 0; }
+.shell-nav button[aria-selected="true"] { background: var(--accent-gradient); color: var(--on-accent); border-color: transparent; }
 .tools-right { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
 .seg { display: inline-flex; gap: 0.25rem; }
 .inline { display: flex; align-items: center; gap: 0.4rem; font-size: 0.85rem; color: var(--muted); }
