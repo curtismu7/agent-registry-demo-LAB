@@ -33,11 +33,8 @@
   border-radius: 8px;
   background: transparent;
   color: var(--on-box);
-  /* ui-pattern: allow P10 shared top-menu is byte-pinned; the token fallback is canonical */
-  /* ui-pattern: allow P10 shared top-menu is byte-pinned; the token fallback is canonical */
-  border: 1px solid var(--on-accent-border, rgba(252, 252, 252, 0.55));
-  /* ui-pattern: allow T1 shared top-menu is byte-pinned; the token fallback is canonical */
-  /* ui-pattern: allow T1 shared top-menu is byte-pinned; the token fallback is canonical */
+  /* --on-accent-border is defined by the vendored standalone-ui.css; no literal fallback (P10/T1) */
+  border: 1px solid var(--on-accent-border);
   cursor: pointer;
   text-decoration: none;
   display: inline-flex;
@@ -109,13 +106,14 @@
   display: inline-flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 0.5rem;
+  gap: 0.55rem;
+  padding-left: 1rem;
 }
 
 .top-menu__row {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.6rem;
   flex-wrap: wrap;
   justify-content: flex-end;
 }
