@@ -10,10 +10,11 @@ import LifecycleTab from "./tabs/LifecycleTab.jsx";
 import GatewayTab from "./tabs/GatewayTab.jsx";
 import DiagramTab, { START_BOXES } from "./tabs/DiagramTab.jsx";
 import RawTab from "./tabs/RawTab.jsx";
+import TalkTrackTab from "./tabs/TalkTrackTab.jsx";
 import TopMenu from "./top-menu/TopMenu.jsx";
 import { setPresenter, initPresenter, presenterOn } from "./presenter.js";
 
-export const TABS = [["registry", "Registry"], ["lifecycle", "Lifecycle"], ["gateway", "Gateway"], ["diagram", "Diagram"], ["raw", "Raw"]];
+export const TABS = [["registry", "Registry"], ["lifecycle", "Lifecycle"], ["gateway", "Gateway"], ["diagram", "Diagram"], ["raw", "Raw"], ["talk", "Talk track"]];
 const read = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
 const write = (k, v) => { try { localStorage.setItem(k, v); } catch { /* not remembered */ } };
 const tabFromHash = () => { const id = window.location.hash.replace(/^#\/?/, "").split("?")[0]; return TABS.some(([t]) => t === id) ? id : "registry"; };
@@ -113,7 +114,7 @@ function Shell({ loadError, ready, info, onSelectMode, modeError, catalog, setCa
   };
 
   const app = { catalog, cast, world, refresh, selected, setSelected, live, addLive, run, scenarioId, setScenarioId, doRun, running, runError, cursor, setCursor, boxes, setBoxes, present, theme, go };
-  const Panel = { registry: RegistryTab, lifecycle: LifecycleTab, gateway: GatewayTab, diagram: DiagramTab, raw: RawTab }[tab];
+  const Panel = { registry: RegistryTab, lifecycle: LifecycleTab, gateway: GatewayTab, diagram: DiagramTab, raw: RawTab, talk: TalkTrackTab }[tab];
 
   return (
     <>
@@ -131,6 +132,7 @@ function Shell({ loadError, ready, info, onSelectMode, modeError, catalog, setCa
               vertical={{ value: catalog.vertical, onChange: pickVertical, options: catalog.verticals.map((v) => v.id) }}
               theme={{ value: theme === "system" ? "auto" : theme, onChange: setThemePersist }}
               present={{ active: present, onToggle: togglePresent, label: "Present" }}
+              talkTrack={{ active: tab === "talk", onToggle: () => go("talk") }}
               help={{ href: "https://github.com/curtismu7/agent-registry-demo-LAB#readme" }}
               version={info?.version || null}
               onReset={resetAll}

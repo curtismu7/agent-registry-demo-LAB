@@ -29,9 +29,9 @@ describe("shell", () => {
       expect(screen.getByTestId("banner")).toBeVisible();
     }
   });
-  it("has the five tabs and moves between them with the arrow keys", async () => {
+  it("has the six tabs and moves between them with the arrow keys", async () => {
     await open();
-    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Registry", "Lifecycle", "Gateway", "Diagram", "Raw"]);
+    expect(screen.getAllByRole("tab").map((t) => t.textContent)).toEqual(["Registry", "Lifecycle", "Gateway", "Diagram", "Raw", "Talk track"]);
     screen.getByRole("tab", { name: "Registry" }).focus();
     await userEvent.keyboard("{ArrowRight}");
     await waitFor(() => expect(screen.getByRole("tab", { name: "Lifecycle" })).toHaveAttribute("aria-selected", "true"));
