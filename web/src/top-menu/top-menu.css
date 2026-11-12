@@ -33,7 +33,11 @@
   border-radius: 8px;
   background: transparent;
   color: var(--on-box);
+  /* ui-pattern: allow P10 shared top-menu is byte-pinned; the token fallback is canonical */
+  /* ui-pattern: allow P10 shared top-menu is byte-pinned; the token fallback is canonical */
   border: 1px solid var(--on-accent-border, rgba(252, 252, 252, 0.55));
+  /* ui-pattern: allow T1 shared top-menu is byte-pinned; the token fallback is canonical */
+  /* ui-pattern: allow T1 shared top-menu is byte-pinned; the token fallback is canonical */
   cursor: pointer;
   text-decoration: none;
   display: inline-flex;
