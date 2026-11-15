@@ -4,6 +4,7 @@ import App from "./App.jsx";
 // The family's shared stylesheet first (tokens, controls, dark mode, banner), then this app's own layout.
 import "./standalone-ui.css";
 import "./top-menu/top-menu.css";
+import "./components/JsonPane.css";
 import "./components/VerifyMark.css";
 import "./app.css";
 

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Inert, pretty } from "../lib/Inert.jsx";
+import { Inert } from "../lib/Inert.jsx";
+import Json from "../components/JsonPane.jsx";
 import { maskKey, maskDeep } from "../lib/mask.js";
 import { registryCall } from "../lib/api.js";
-import { ResultBox, RuleNote, StatePill, expiryText } from "../lib/ui.jsx";
+import { HOT, ResultBox, RuleNote, StatePill, expiryText } from "../lib/ui.jsx";
 
 const MOCK_REAL = "sk-MOCK-REAL-UPSTREAM-PLACEHOLDER";
 const EXPIRIES = [["+30d", "30 days", 30 * 86400], ["+90d", "90 days", 90 * 86400], ["+1y", "1 year", 365 * 86400], ["none", "no expiry", 0]];
@@ -193,7 +194,7 @@ function KeyDetail({ app, k }) {
       <ResultBox result={result} rules={catalog.rules} />
       {panel === "grant" && <GrantPanel app={app} k={k} onResult={setResult} />}
       {panel === "rotate" && <RotatePanel app={app} k={k} />}
-      <details><summary>Spec as the registry returns it (keys masked)</summary><Inert block text={pretty(maskDeep(k.spec))} testid="spec-json" /></details>
+      <details><summary>Spec as the registry returns it (keys masked)</summary><Json value={maskDeep(k.spec)} label="Spec" testId="spec-json" hot={HOT} /></details>
     </section>
   );
 }

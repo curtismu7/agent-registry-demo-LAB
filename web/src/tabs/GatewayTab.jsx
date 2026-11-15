@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { Inert, pretty } from "../lib/Inert.jsx";
+import { Inert } from "../lib/Inert.jsx";
+import Json from "../components/JsonPane.jsx";
+import { HOT } from "../lib/ui.jsx";
 import { advanceClock, gatewayCall } from "../lib/api.js";
 import { maskKey } from "../lib/mask.js";
 
@@ -112,7 +114,7 @@ function Result({ r }) {
       <div className="cols">
         <div>
           <h3>On the wire (what the agent sees)</h3>
-          <Inert block text={t.response || pretty(r.body)} testid="gw-response" />
+          <Json value={t.response || r.body} label="Response on the wire" testId="gw-response" hot={HOT} />
         </div>
         <div>
           <h3>Gateway log (only the operator sees this)</h3>

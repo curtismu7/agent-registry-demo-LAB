@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Inert, pretty } from "../lib/Inert.jsx";
+import { Inert } from "../lib/Inert.jsx";
+import Json from "../components/JsonPane.jsx";
 import { maskDeep } from "../lib/mask.js";
 import { runScenario } from "../lib/api.js";
-import { RuleNote } from "../lib/ui.jsx";
+import { HOT, RuleNote } from "../lib/ui.jsx";
 
 // A story runs in its own fresh mock world (it never touches the live registry on the other tabs), one step at a time.
 export function ScenarioBar({ app }) {
@@ -51,11 +52,11 @@ export function StoryPlayer({ app }) {
           {cur.notes.map((n, i) => <p key={i} className="small muted"><Inert text={n} /></p>)}
           {cur.trace && (
             <details open><summary>Trace {cur.trace.traceparent}</summary>
-              <div className="cols"><Inert block text={cur.trace.request} testid="step-request" /><Inert block text={cur.trace.response} testid="step-response" /></div>
+              <div className="cols"><Json value={cur.trace.request} label="Request" testId="step-request" hot={HOT} /><Json value={cur.trace.response} label="Response" testId="step-response" hot={HOT} /></div>
               {cur.trace.gatewayLog?.length > 0 && <Inert block text={cur.trace.gatewayLog.join("\n")} testid="step-log" />}
             </details>
           )}
-          {!cur.trace && <Inert block text={pretty(maskDeep(cur.body))} testid="step-body" />}
+          {!cur.trace && <Json value={maskDeep(cur.body)} label="Step result" testId="step-body" hot={HOT} />}
         </div>
       )}
       <p className="story__takeaway" data-testid="takeaway"><Inert text={run.takeaway} /></p>
