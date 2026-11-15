@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
-import { Inert } from "../lib/Inert.jsx";
+import Json from "../components/JsonPane.jsx";
+import { HOT } from "../lib/ui.jsx";
 
 // Raw messages: either from the story on screen or from live gateway calls. Keys are masked on the server before they get here.
 export default function RawTab({ app }) {
@@ -36,8 +37,8 @@ export default function RawTab({ app }) {
         <>
           <p className="muted small">traceparent <code>{m.trace.traceparent}</code></p>
           <div className="cols">
-            <section className="card"><h3>Request</h3><Inert block text={m.trace.request} testid="raw-request" /></section>
-            <section className="card"><h3>Response</h3><Inert block text={m.trace.response} testid="raw-response" /></section>
+            <section className="card"><h3>Request</h3><Json value={m.trace.request} label="Request" testId="raw-request" hot={HOT} /></section>
+            <section className="card"><h3>Response</h3><Json value={m.trace.response} label="Response" testId="raw-response" hot={HOT} /></section>
           </div>
         </>
       )}
