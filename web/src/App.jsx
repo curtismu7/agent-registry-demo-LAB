@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ShelfLink from "./components/ShelfLink.jsx";
+import VerifyMark from "./components/VerifyMark.jsx";
 import ReturnLink from "./return-link/ReturnLink.jsx";
 import { readReturnContext } from "./return-link/returnTargets.js";
 import { scenarioFor, verticalFor } from "./handoffMap.js";
@@ -127,6 +128,7 @@ function Shell({ loadError, ready, info, onSelectMode, modeError, catalog, setCa
         <div className="tools-right shell-right">
             <ReturnLink app="agent-registry-demo" variant="header" />
             <ShelfLink />
+            <VerifyMark id="agent-registry-demo" />
           <span className="mode-toggle" style={{ display: "contents" }}>
             <TopMenu
               mode={{ value: info?.source === "real" ? "real" : "mock", onChange: onSelectMode, realAvailable: info ? info.realAvailable === true : null, realHint: info?.realReason }}
