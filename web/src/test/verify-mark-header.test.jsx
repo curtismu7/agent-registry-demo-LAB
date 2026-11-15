@@ -20,7 +20,7 @@ function withShelf(payload) {
 const header = (container) => container.querySelector("header.shell-bar");
 
 describe("verification mark in the header", () => {
-  it("shows this lab's own mark beside the Shelf link, and no other lab's", async () => {
+  it("shows this lab's own mark in the header's top menu with the Shelf link beside it, and no other lab's", async () => {
     const restore = withShelf({ shelfUrl: "http://shelf.example", demos: [{ id: "other-lab", verification: mark("in-progress", "In progress") }, { id: "agent-registry-demo", verification: mark("verified", "Verified", { note: "Every story run on the mock" }) }] });
     try {
       const { container } = render(<App />);
@@ -30,6 +30,7 @@ describe("verification mark in the header", () => {
       expect(bar.getByRole("link", { name: "Shelf" })).toBeInTheDocument();
       expect(bar.queryByText("In progress")).toBeNull();
       expect(container.querySelectorAll(".verify")).toHaveLength(1);
+      expect(container.querySelector("[data-testid='top-menu'] .verify")).not.toBeNull();
       expect(bar.getByText("Verified").closest(".verify")).toHaveAttribute("title", expect.stringContaining("Every story run on the mock"));
     } finally { restore(); }
   });

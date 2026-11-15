@@ -128,7 +128,6 @@ function Shell({ loadError, ready, info, onSelectMode, modeError, catalog, setCa
         <div className="tools-right shell-right">
             <ReturnLink app="agent-registry-demo" variant="header" />
             <ShelfLink />
-            <VerifyMark id="agent-registry-demo" />
           <span className="mode-toggle" style={{ display: "contents" }}>
             <TopMenu
               mode={{ value: info?.source === "real" ? "real" : "mock", onChange: onSelectMode, realAvailable: info ? info.realAvailable === true : null, realHint: info?.realReason }}
@@ -139,7 +138,9 @@ function Shell({ loadError, ready, info, onSelectMode, modeError, catalog, setCa
               help={{ href: "https://github.com/curtismu7/agent-registry-demo-LAB#readme" }}
               version={info?.version || null}
               onReset={resetAll}
-            />
+            >
+              <VerifyMark id="agent-registry-demo" />
+            </TopMenu>
           </span>
         </div>
       </header>

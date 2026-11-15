@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Verification mark in the header: the shared `VerifyMark` (vendored byte for byte from AI-DEMO-Standalone `shared/verify-mark`, pinned) shows this lab's Verified / In progress mark from the demo shelf, beside the Shelf link. It reads the same `GET /api/shelf` call the Shelf link makes, so it shows through the lab-proxy and nothing when the lab is opened on its own port, when the shelf has no mark for it, or when the shelf is unreachable.
+- Verification mark in the header: the shared `VerifyMark` (vendored byte for byte from AI-DEMO-Standalone `shared/verify-mark`, pinned) shows this lab's Verified / In progress mark from the demo shelf, at the end of the header's top menu, next to the Shelf link (the top menu gives the badge its own pill, so its text keeps contrast on the dark bar in both themes). It reads the same `GET /api/shelf` call the Shelf link makes, so it shows through the lab-proxy and nothing when the lab is opened on its own port, when the shelf has no mark for it, or when the shelf is unreachable.
 
 ## 0.1.0 (step AR0)
 Core: registry simulator, grants, mock gateway, nine stories in three verticals, trace envelope, netguard, doctor, health, reset, content pack, shelf entry, CI, tests and a mutation check. UI follows in AR1.
