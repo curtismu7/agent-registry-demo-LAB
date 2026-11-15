@@ -150,7 +150,7 @@ function Shell({ loadError, ready, info, onSelectMode, modeError, catalog, setCa
       </div>
       <main className="page" id="main" role="tabpanel" aria-labelledby={`tab-${tab}`} tabIndex={-1}>
 
-        <PrivilegeCheck />
+        {tab === "registry" || tab === "gateway" || tab === "diagram" ? <PrivilegeCheck /> : <PrivilegeCheck primaryRetry />}
         <p className="lede" data-admin-only>{fill("{{custodian}} registers {{agent_label}}, grants it to {{app}}, rotates it by replacement and retires it. Switch the persona to change the cast.", cast)}</p>
         <Panel app={app} />
       </main>
