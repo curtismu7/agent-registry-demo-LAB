@@ -3,12 +3,13 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from
 import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "../App.jsx";
+import { setJsonView } from "../components/JsonPane.jsx";
 import { startLive, seedKey } from "./liveServer.js";
 
 let live;
 beforeAll(async () => { live = await startLive(); });
 afterAll(async () => { await live.stop(); });
-beforeEach(async () => { await live.api("POST", "/api/reset"); window.location.hash = "#/registry"; document.documentElement.removeAttribute("data-present"); try { localStorage.clear(); } catch { /* none */ } });
+beforeEach(async () => { setJsonView("raw"); await live.api("POST", "/api/reset"); window.location.hash = "#/registry"; document.documentElement.removeAttribute("data-present"); try { localStorage.clear(); } catch { /* none */ } });
 afterEach(cleanup);
 
 const open = async (tab) => {
@@ -140,7 +141,7 @@ describe("grant, call, revoke", () => {
     await pick("Route", "llm");
     await userEvent.click(screen.getByRole("button", { name: "Send 5 calls" }));
     expect(await screen.findByTestId("burst")).toHaveTextContent("200, 200, 200, 429, 429");
-    expect(screen.getByTestId("gw-response")).toHaveTextContent("tokens_rate_limit_exceeded");
+    expect(screen.getByTestId("gw-response-box")).toHaveTextContent("tokens_rate_limit_exceeded");
     await userEvent.click(screen.getByRole("button", { name: "+61 seconds" }));
     await userEvent.click(screen.getByRole("button", { name: "Send call" }));
     expect(await screen.findByText(/200 OK: call allowed/)).toBeInTheDocument();
@@ -150,7 +151,7 @@ describe("grant, call, revoke", () => {
     await pick("Credential", "__unknown__");
     await userEvent.click(screen.getByRole("button", { name: "Send call" }));
     expect(await screen.findByText(/401 Unauthorized: call refused/)).toBeInTheDocument();
-    expect(screen.getByTestId("gw-response")).not.toHaveTextContent("unknown");
+    expect(screen.getByTestId("gw-response-box")).not.toHaveTextContent("unknown");
     expect(screen.getByTestId("gw-log")).toHaveTextContent("unknown key");
   });
   it("a workload token call is accepted with matching claims, rejected with another audience", async () => {
@@ -242,7 +243,7 @@ describe("story player", () => {
     await userEvent.click(screen.getByRole("button", { name: "Next step" }));
     await userEvent.click(screen.getByRole("button", { name: "Next step" }));
     expect(screen.getByTestId("step-detail")).toHaveTextContent("traceparent: 00-");
-    expect(screen.getByTestId("step-request")).toHaveTextContent("POST /flights-mcp/mcp");
+    expect(screen.getByTestId("step-request-box")).toHaveTextContent("POST /flights-mcp/mcp");
     expect(screen.getAllByTestId("rule-note").length).toBeGreaterThan(0);
   });
   it("a refusal story says refused, in words, on the step tags", async () => {
@@ -262,6 +263,33 @@ describe("story player", () => {
   });
 });
 
+describe("JSON panes", () => {
+  it("the spec pane offers Form | JSON, shows a masked key in both views and never the full one", async () => {
+    await seedKey(live.api);
+    const full = (await live.api("GET", "/api/registry/keys/travel-agent")).data.response.spec.VirtualKey;
+    await open();
+    await userEvent.click(await screen.findByRole("button", { name: "Open travel-agent" }));
+    const box = await screen.findByTestId("spec-json-box");
+    expect(screen.getByTestId("spec-json-raw")).toHaveAttribute("aria-pressed", "true");
+    expect(box).toHaveTextContent('"Scopes"');
+    await userEvent.click(screen.getByTestId("spec-json-formatted"));
+    expect(screen.getByTestId("spec-json-formatted")).toHaveAttribute("aria-pressed", "true");
+    expect(box).toHaveTextContent("Scopes");
+    expect(box).not.toHaveTextContent('"Scopes"');
+    expect(box).toHaveTextContent(/sk-MOCK-[A-Z0-9-]{4}\.\.\.[A-Z0-9]{4}/);
+    expect(document.body.textContent).not.toContain(full);
+  });
+  it("a transcript keeps its headers as text and gives the JSON body its own pane", async () => {
+    await seedKey(live.api);
+    await live.api("POST", "/api/registry/grants", { keyName: "travel-agent", app: "flights-mcp" });
+    await open("Gateway");
+    await userEvent.click(screen.getByRole("button", { name: "Send call" }));
+    await screen.findByText(/200 OK: call allowed/);
+    expect(screen.getByTestId("gw-response-head")).toHaveTextContent(/^HTTP\/1\.1 200 OK/);
+    expect(screen.getByTestId("gw-response-body-box")).toBeInTheDocument();
+  });
+});
+
 describe("raw tab and reset", () => {
   it("shows the live gateway trace with a traceparent and a masked key", async () => {
     await seedKey(live.api);
@@ -271,8 +299,8 @@ describe("raw tab and reset", () => {
     await userEvent.click(screen.getByRole("button", { name: "Send call" }));
     await screen.findByText(/200 OK: call allowed/);
     await userEvent.click(screen.getByRole("tab", { name: "Raw" }));
-    expect(await screen.findByTestId("raw-request")).toHaveTextContent(/traceparent: 00-[0-9a-f]{32}-[0-9a-f]{16}-01/);
-    expect(screen.getByTestId("raw-request")).toHaveTextContent(/authorization: Bearer sk-MOCK-[A-Z0-9-]{4}\.\.\.[A-Z0-9]{4}/);
+    expect(await screen.findByTestId("raw-request-box")).toHaveTextContent(/traceparent: 00-[0-9a-f]{32}-[0-9a-f]{16}-01/);
+    expect(screen.getByTestId("raw-request-box")).toHaveTextContent(/authorization: Bearer sk-MOCK-[A-Z0-9-]{4}\.\.\.[A-Z0-9]{4}/);
     expect(document.body.textContent).not.toContain(full);
   });
   it("Reset forgets every key and clears the screen", async () => {

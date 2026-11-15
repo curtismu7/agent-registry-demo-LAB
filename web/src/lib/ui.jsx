@@ -1,6 +1,10 @@
 import React from "react";
-import { Inert, pretty } from "./Inert.jsx";
+import { Inert } from "./Inert.jsx";
+import Json from "../components/JsonPane.jsx";
 import { maskDeep } from "./mask.js";
+
+// The keys that matter in this lab's payloads, stood out on every JSON pane (on top of JsonPane's defaults).
+export const HOT = ["state", "Scopes", "Revoked", "NotAfter", "Custodian", "WorkloadIdentity", "Provider", "AllowedModels", "rule", "message", "type"];
 
 export const StatePill = ({ state }) => <span className={`pill ${state}`}>{state}</span>;
 
@@ -25,7 +29,7 @@ export function ResultBox({ result, rules }) {
       <strong>{result.status} {bad ? "refused" : "accepted"}</strong>{body.message ? <>: <Inert text={body.message} /></> : null}
       {result.notes?.map((n, i) => <p key={i} className="small" data-testid="result-note"><Inert text={n} /></p>)}
       {body.rule && <RuleNote id={body.rule} rules={rules} />}
-      {!bad && result.response?.spec && <Inert block text={pretty(maskDeep(result.response))} testid="result-body" />}
+      {!bad && result.response?.spec && <Json value={maskDeep(result.response)} label="Registry response" testId="result-body" hot={HOT} />}
     </div>
   );
 }

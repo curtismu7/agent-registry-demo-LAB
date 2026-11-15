@@ -16,5 +16,3 @@ export function Inert({ text, block = false, testid = "inert" }) {
     </Tag>
   );
 }
-
-export const pretty = (v) => JSON.stringify(v, null, 2);
