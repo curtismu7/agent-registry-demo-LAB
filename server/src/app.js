@@ -20,7 +20,21 @@ const MAX_ADVANCE_S = 10 * 365 * 86400;
 
 // Mock/Real: this demo is an in-process simulator with no real server to call, so Real is never available in a normal build.
 // `realAvailable` is a test-only seam (never read from the environment) so the switch itself can be tested.
-const NO_REAL = 'Real mode is not available: this demo simulates the Agent Registry and gateway in-process and has no real server to call.';
+// Real is the shared gateway hop: an agent key from the shared settings file calling a live Privilege MCP door.
+const NO_REAL = 'Real is not configured: set ARG_GW_URL, ARG_GW_APPS and at least one ARG_GW_KEY_<NAME> in the shared settings file (~/Development/.env, or STANDALONE_ENV). Mock keeps working.';
+
+import { readFileSettings, doorConfig, createRealDoor } from './gatewayReal.js';
+import { setAllowedOrigins } from './netguard.js';
+
+// The environment wins over the file (the family rule): overlay ARG_* variables on the parsed file text.
+export function realDoorFrom(env = process.env) {
+  const p = env.STANDALONE_ENV || `${env.HOME || ''}/Development/.env`;
+  let text = '';
+  try { text = fs.readFileSync(p, 'utf8'); } catch { /* the environment may still carry the keys */ }
+  for (const [k, v] of Object.entries(env)) if (k.startsWith('ARG_GW_') && v) text += `\n${k}=${v}`;
+  const cfg = doorConfig(text, 'ARG');
+  return cfg.ok ? createRealDoor({ config: cfg, clientInfo: { name: 'agent-registry-demo', version: '0.2.0' } }) : null;
+}
 
 export function createApp({ health = createHealth(), world: initialWorld = createWorld({ start: Date.now() }), realAvailable = false, customer = loadCustomer(), allowedHosts = new Set() } = {}) {
   // Workspaces (rule 13): the x-workspace header scopes the mock world. 'default' keeps
@@ -31,7 +45,14 @@ export function createApp({ health = createHealth(), world: initialWorld = creat
   });
   if (initialWorld) workspaces.get(DEFAULT_WORKSPACE);
   let world = initialWorld; // the default workspace's world (also what /api/reset swaps)
-  const canReal = realAvailable === true;
+  const canReal = realAvailable === true || Boolean(realDoorFrom(process.env));
+  if (canReal) {
+    // Real mode may reach exactly the door origin; every other outbound stays blocked and recorded.
+    const cfg = doorConfig((() => { try { return fs.readFileSync(process.env.STANDALONE_ENV || `${process.env.HOME || ''}/Development/.env`, 'utf8'); } catch { return ''; } })(), 'ARG');
+    const origin = cfg.ok ? cfg.origin : (realDoorFrom(process.env)?.origin ?? null);
+    const envOrigin = Object.entries(process.env).find(([k]) => k === 'ARG_GW_URL')?.[1];
+    if (envOrigin || origin) setAllowedOrigins([envOrigin || origin].filter(Boolean));
+  }
   const modeState = { source: canReal ? 'real' : 'mock' };
   const info = () => ({ source: modeState.source, realAvailable: canReal, realReason: canReal ? null : NO_REAL, workspace: DEFAULT_WORKSPACE, version: (() => { try { return JSON.parse(fs.readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version || null; } catch { return null; } })() });
   const app = express();
@@ -58,6 +79,21 @@ export function createApp({ health = createHealth(), world: initialWorld = creat
     if (b.source === 'real' && !canReal) return bad(res, NO_REAL, 409);
     modeState.source = b.source;
     return res.json(info());
+  });
+
+  // One real gateway check: tools/list through the door with the agent key, then the gateway's refusal for a
+  // tool nothing grants. The gateway's own words come back unaltered (keys scrubbed). 409 while in mock.
+  api.post('/gateway-check', async (req, res) => {
+    const door = realDoorFrom(process.env);
+    if (!door) return bad(res, NO_REAL, 409);
+    if (req.body && Object.keys(req.body).some((k) => !['app', 'caller'].includes(k))) return bad(res, 'the only accepted body fields are { "app", "caller" }');
+    const app = String(req.body?.app || door.apps[0]);
+    if (!door.apps.includes(app)) return bad(res, `app must be one of ${door.apps.join(', ')}`);
+    const caller = req.body?.caller && door.callers.some((c) => c.id === req.body.caller) ? req.body.caller : door.callers[0].id;
+    const listing = await door.list(app, caller);
+    const out = { app, caller, gateway: door.origin, ...(door.version ? { version: door.version } : {}), listing };
+    if (listing.ok) out.refusal = await door.call(app, caller, 'agent_registry_refusal_probe_tool', {});
+    res.json(out);
   });
   const send = (res, out) => res.status(out.status).json({ response: out.body, notes: out.notes || [] });
 

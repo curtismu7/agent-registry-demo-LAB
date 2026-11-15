@@ -5,16 +5,20 @@ import net from 'node:net';
 import dgram from 'node:dgram';
 import { isLoopbackHost } from './safety.js';
 
-let active = null;
-
-export function installNetguard() {
-  if (active) return active;
-  const attempts = [];
-  const real = {
-    connect: net.Socket.prototype.connect, lookup: dns.lookup, fetch: globalThis.fetch, send: dgram.Socket.prototype.send,
-    plookup: dns.promises.lookup,
-  };
-  // Every resolver entry point that can reach a real name server: dns.resolve*, dns.promises.resolve*, and Resolver instances.
+ let active = null;
+// Real mode's ONE allowed outbound origin (the Privilege gateway door origin). Empty = zero outbound, as before.
+let allowedOrigins = new Set();
+export function setAllowedOrigins(origins) { allowedOrigins = new Set(origins ?? []); }
+const originAllowed = (hostname) => [...allowedOrigins].some((o) => { try { return new URL(o).hostname === hostname; } catch { return false; } });
+ 
+ export function installNetguard() {
+   if (active) return active;
+   const attempts = [];
+   const real = {
+     connect: net.Socket.prototype.connect, lookup: dns.lookup, fetch: globalThis.fetch, send: dgram.Socket.prototype.send,
+     plookup: dns.promises.lookup,
+   };
+   // Every resolver entry point that can reach a real name server: dns.resolve*, dns.promises.resolve*, and Resolver instances.
   const RESOLVERS = ['resolve', 'resolve4', 'resolve6', 'resolveAny', 'resolveCaa', 'resolveCname', 'resolveMx', 'resolveNaptr', 'resolveNs', 'resolvePtr', 'resolveSoa', 'resolveSrv', 'resolveTxt', 'reverse'];
   const savedResolvers = [];
   const blockedResolver = (label, name, target) => function guardedResolve(host, ...rest) {
@@ -44,13 +48,13 @@ export function installNetguard() {
   };
   net.Socket.prototype.connect = function guardedConnect(...args) {
     const host = hostOf(args);
-    if (!isLoopbackHost(host)) { attempts.push(`socket:${host}`); throw new Error(`network blocked: ${host}`); }
+    if (!isLoopbackHost(host) && !originAllowed(host)) { attempts.push(`socket:${host}`); throw new Error(`network blocked: ${host}`); }
     return real.connect.apply(this, args);
   };
   dns.lookup = function guardedLookup(host, ...rest) {
     // listen() resolves its bind address through lookup. A wildcard bind (the container's AREG_BIND=0.0.0.0) is not outbound,
     // and connecting to it is still refused by the socket guard above, so only the lookup is allowed.
-    if (!isLoopbackHost(host) && host !== '0.0.0.0' && host !== '::') {
+    if (!isLoopbackHost(host) && host !== '0.0.0.0' && host !== '::' && !originAllowed(host)) {
       attempts.push(`dns:${host}`);
       const cb = rest.find((r) => typeof r === 'function');
       return cb?.(new Error(`network blocked: ${host}`));
@@ -58,12 +62,12 @@ export function installNetguard() {
     return real.lookup.call(dns, host, ...rest);
   };
   dns.promises.lookup = async function guardedPromiseLookup(host, ...rest) {
-    if (!isLoopbackHost(host) && host !== '0.0.0.0' && host !== '::') { attempts.push(`dns:${host}`); throw new Error(`network blocked: ${host}`); }
+    if (!isLoopbackHost(host) && host !== '0.0.0.0' && host !== '::' && !originAllowed(host)) { attempts.push(`dns:${host}`); throw new Error(`network blocked: ${host}`); }
     return real.plookup.call(dns.promises, host, ...rest);
   };
   globalThis.fetch = async function guardedFetch(input, init) {
     const url = new URL(typeof input === 'string' || input instanceof URL ? input : input.url);
-    if (!isLoopbackHost(url.hostname)) { attempts.push(`fetch:${url.hostname}`); throw new Error(`network blocked: ${url.hostname}`); }
+    if (!isLoopbackHost(url.hostname) && !originAllowed(url.hostname)) { attempts.push(`fetch:${url.hostname}`); throw new Error(`network blocked: ${url.hostname}`); }
     return real.fetch(input, init);
   };
   dgram.Socket.prototype.send = function guardedSend(...args) {

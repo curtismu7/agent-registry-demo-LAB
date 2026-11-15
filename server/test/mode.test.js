@@ -1,5 +1,6 @@
-// The Mock/Real switch (owner rule 19). Nothing real exists to call here, so Real is refused unless the test-only
-// `realAvailable` seam is on. Every test runs under the network guard: the switch makes zero outbound attempts.
+// The Mock/Real switch (owner rule 19). Real is refused unless the test-only `realAvailable` seam is on (or the
+// shared settings file carries the ARG_* gateway hop, which it does not under the test environment). Every test
+// runs under the network guard: the refused switch makes zero outbound attempts.
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createApp, startHttpServer } from '../src/app.js';
@@ -24,14 +25,14 @@ test('GET /api/info: Mock by default, Real not available, with the reason; works
   assert.deepEqual(Object.keys(i).sort(), ['realAvailable', 'realReason', 'source', 'version', 'workspace']);
   assert.equal(i.source, 'mock');
   assert.equal(i.realAvailable, false);
-  assert.match(i.realReason, /Real mode is not available: .*no real server to call\./);
+  assert.match(i.realReason, /Real is not configured: .*Mock keeps working\./);
   assert.equal(i.workspace, 'default');
 }));
 
 test('POST /api/mode real is refused with 409 and the mode stays Mock; mock is accepted', () => withMode(async ({ mode, info }) => {
   const r = await mode({ source: 'real' });
   assert.equal(r.status, 409);
-  assert.match((await r.json()).message, /no real server to call/);
+  assert.match((await r.json()).message, /Real is not configured/);
   assert.equal((await info()).source, 'mock');
   const m = await mode({ source: 'mock' });
   assert.equal(m.status, 200);
