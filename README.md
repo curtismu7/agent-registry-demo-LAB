@@ -138,3 +138,26 @@ See [docs/architecture.md](docs/architecture.md), [docs/safety.md](docs/safety.m
 ## Web UI
 
 `npm run build` then `npm start` serves the UI and API together at the loopback URL it prints (default port 5010). For hot reload run `npm start` and, in another terminal, `npm run dev -w web` (Vite on 5011, proxying /api). The banner "simulated registry, not the real product" is always visible, including in presenter mode.
+
+---
+
+## Real mode: through the PingOne Privilege gateway
+
+Real mode here is one live call through the SE PingOne Privilege gateway
+(`https://mcpgw.ai-demo.ping-devops.com`) with an agent access key from the shared settings
+file (`~/Development/.env`, or the file `STANDALONE_ENV` names).
+
+**Privilege objects this lab uses:**
+
+| Object | Value |
+|---|---|
+| Gateway | `mcpgw.ai-demo.ping-devops.com` (cluster `ai-demo-cmuir`) |
+| Door (Agentic App) | `aggregate-limited` — client path `/aggregate-limited/mcp` |
+| Caller | agent access key `ARG_GW_KEY_LAB_AGENT` (write-only, never shown) |
+| Backend | `aggregate` = the gateway's MCP aggregate over `opensearch` (9 tools) + `banking-mcp` (33 tools); `aggregate-limited` = the same members with a tool filter |
+
+**What runs in Real:** the **Privilege gateway check** (`POST /api/gateway-check`, card on the
+page) — one live `tools/list` through the door with the key, then one `tools/call` probe of a
+tool no policy grants, so you see the gateway's own refusal shape. The gateway's words come
+back unaltered (keys scrubbed). Settings keys: `ARG_GW_URL`, `ARG_GW_APPS`,
+`ARG_GW_KEY_<NAME>` (optional `ARG_GW_VERSION`).

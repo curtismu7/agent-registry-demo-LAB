@@ -13,6 +13,7 @@ import RawTab from "./tabs/RawTab.jsx";
 import TalkTrackTab from "./tabs/TalkTrackTab.jsx";
 import TopMenu from "./top-menu/TopMenu.jsx";
 import { setPresenter, initPresenter, presenterOn } from "./presenter.js";
+import PrivilegeCheck from "./privilege-check/PrivilegeCheck.jsx";
 
 export const TABS = [["registry", "Registry"], ["lifecycle", "Lifecycle"], ["gateway", "Gateway"], ["diagram", "Diagram"], ["raw", "Raw"], ["talk", "Talk track"]];
 const read = (k, d) => { try { return localStorage.getItem(k) ?? d; } catch { return d; } };
@@ -148,6 +149,8 @@ function Shell({ loadError, ready, info, onSelectMode, modeError, catalog, setCa
         ))}
       </div>
       <main className="page" id="main" role="tabpanel" aria-labelledby={`tab-${tab}`} tabIndex={-1}>
+
+        <PrivilegeCheck />
         <p className="lede" data-admin-only>{fill("{{custodian}} registers {{agent_label}}, grants it to {{app}}, rotates it by replacement and retires it. Switch the persona to change the cast.", cast)}</p>
         <Panel app={app} />
       </main>
