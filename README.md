@@ -147,15 +147,15 @@ See [docs/architecture.md](docs/architecture.md), [docs/safety.md](docs/safety.m
 
 ## Real mode: through the PingOne Privilege gateway
 
-Real mode here is one live call through the SE PingOne Privilege gateway
-(`https://mcpgw.ai-demo.ping-devops.com`) with an agent access key from the shared settings
+Real mode here is one live call through the SE PingOne Privilege gateway (its URL is the
+`ARG_GW_URL` value in the shared settings file) with an agent access key from the same settings
 file (`~/Development/.env`, or the file `STANDALONE_ENV` names).
 
 **Privilege objects this lab uses:**
 
 | Object | Value |
 |---|---|
-| Gateway | `mcpgw.ai-demo.ping-devops.com` (cluster `ai-demo-cmuir`) |
+| Gateway | the SE PingOne Privilege gateway: URL from `ARG_GW_URL` in the shared settings file (it runs on the SE cluster) |
 | Door (Agentic App) | `aggregate-limited` — client path `/aggregate-limited/mcp` |
 | Caller | agent access key `ARG_GW_KEY_LAB_AGENT` (write-only, never shown) |
 | Backend | `aggregate` = the gateway's MCP aggregate over `opensearch` (9 tools) + `banking-mcp` (33 tools); `aggregate-limited` = the same members with a tool filter |

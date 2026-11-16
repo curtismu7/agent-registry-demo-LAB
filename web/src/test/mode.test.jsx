@@ -15,6 +15,8 @@ const counting = () => { const calls = []; const f = globalThis.fetch; globalThi
 describe("Mock/Real toggle", () => {
   it("is in the header on every tab: Mock pressed, Real disabled with the server's reason as its tooltip", async () => {
     live = await startLive();
+    const { realReason } = (await live.api("GET", "/api/info")).data;
+    expect(realReason).toMatch(/Real is not configured: .*Mock keeps working\./);
     const { container } = render(<App />);
     for (const [, label] of TABS) {
       await screen.findByRole("tablist");
@@ -23,7 +25,7 @@ describe("Mock/Real toggle", () => {
       const mode = await within(header(container)).findByTestId("mode-select");
       await waitFor(() => expect(mode).toHaveValue("mock"));
       expect(mode.querySelector('option[value="real"]').disabled).toBe(true);
-      expect(mode.querySelector('option[value="real"]')).toHaveAttribute("title", expect.stringMatching(/no real server to call/));
+      expect(mode.querySelector('option[value="real"]')).toHaveAttribute("title", realReason);
     }
   });
 
