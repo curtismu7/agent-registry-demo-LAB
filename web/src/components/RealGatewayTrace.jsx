@@ -22,6 +22,7 @@ export default function RealGatewayTrace({ info }) {
   return (
     <section className="card" aria-label="What Privilege did, real gateway" data-testid="real-gateway-trace">
       <div className="actions">
+        {/* ui-pattern: allow P9 secondary on purpose; the one primary on every page is another control (the Privilege card's primaryRetry, or the page's own action), which the checker cannot expand */}
         <button type="button" className="btn" disabled={state.phase === "running"} onClick={run} data-testid="real-trace-run">
           {state.phase === "running" ? "Calling the gateway..." : "Show what Privilege did (one live gateway check)"}
         </button>
