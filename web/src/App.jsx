@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ShelfLink from "./components/ShelfLink.jsx";
+import VerifyMark from "./components/VerifyMark.jsx";
 import ReturnLink from "./return-link/ReturnLink.jsx";
 import { readReturnContext } from "./return-link/returnTargets.js";
 import { scenarioFor, verticalFor } from "./handoffMap.js";
@@ -138,7 +139,9 @@ function Shell({ loadError, ready, info, onSelectMode, modeError, catalog, setCa
               help={{ href: "https://github.com/curtismu7/agent-registry-demo-LAB#readme" }}
               version={info?.version || null}
               onReset={resetAll}
-            />
+            >
+              <VerifyMark id="agent-registry-demo" />
+            </TopMenu>
           </span>
         </div>
       </header>
