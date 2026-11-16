@@ -89,6 +89,7 @@ export function runScenario(scenarioId, verticalId, { definition } = {}) {
         const r = gateway.evaluate({ credential, route: s.route, traceparent: `00-${traceId}-${randomBytes(8).toString('hex')}-01`, tokens: s.tokens, costUsd: s.costUsd });
         out = { status: r.status, body: r.body, notes: r.trace.notes };
         trace = r.trace;
+        extra.gw = r.gw;
         break;
       }
       default: throw new Error(`unknown op ${s.op}`);
@@ -104,7 +105,7 @@ export function runScenario(scenarioId, verticalId, { definition } = {}) {
     if (exp.types && !exp.types.every((t) => (extra.types || []).includes(t))) failures.push(`expected warning types ${exp.types.join(',')}, got ${(extra.types || []).join(',') || 'none'}`);
     steps.push({
       index: i + 1, op: s.op, say: s.say, status: out.status, ok: failures.length === 0, failures,
-      body: out.body, notes: out.notes || [], trace, events: ev, at: new Date(clock.now()).toISOString(),
+      body: out.body, notes: out.notes || [], trace, gw: extra.gw, events: ev, at: new Date(clock.now()).toISOString(),
     });
   });
 

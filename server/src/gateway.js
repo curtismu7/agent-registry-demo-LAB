@@ -7,7 +7,8 @@
 //  order:   authenticate -> scope -> provider/model (llm) or grant (mcp, a2a) -> caps (llm only, measured there)
 //  wire:    401 does not say why (unknown, revoked and expired look identical); the only self-describing refusal is the scope 403;
 //           a bare 403 is explained only in the gateway log.
-import { childTraceparent, rawRequest, rawResponse, envelope } from './trace.js';
+import { childTraceparent, rawRequest, rawResponse, envelope, maskKeys } from './trace.js';
+import { mockTrace } from './gatewayTrace.js';
 import { cleanText } from './safety.js';
 
 export const GATEWAY_HOST = 'gateway.example.invalid';
@@ -41,12 +42,27 @@ export function createGateway({ registry, grants, now = () => Date.now() }) {
     } else headers.authorization = `Bearer ${cred.value || ''}`;
     const request = rawRequest({ method: 'POST', host: GATEWAY_HOST, path, headers, body });
 
+    // "What Privilege did" (rule 25): this gateway computes each check, so every decision here is `checked`. A check the chain never
+    // reached is `skipped`. The record sits beside the text trace (`trace`), which tests and the Raw tab still read unchanged.
+    const STAGES = kind === 'llm'
+      ? [['authenticated', 'Authentication'], ['state', 'Key state'], ['scope', 'Scope'], ['target', 'Provider and model'], ['caps', 'Caps (RPM, TPM, budget)']]
+      : [['authenticated', 'Authentication'], ['state', 'Key state'], ['scope', 'Scope'], ['grant', 'Grant']];
+    const done = new Map();
+    const decide = (id, outcome, evidence) => done.set(id, { outcome, evidence });
+    const decisions = () => STAGES.map(([id, label]) => ({ id, label, ...(done.get(id) || { outcome: 'skipped', evidence: 'not reached: an earlier check refused the call' }) }));
+
     const finish = (status, resBody, extraHeaders = {}) => {
       const resHeaders = { 'content-type': typeof resBody === 'string' ? 'text/plain' : 'application/json', traceparent, ...extraHeaders };
       const response = rawResponse({ status, headers: resHeaders, body: resBody });
-      return { status, headers: resHeaders, body: resBody, verdict: status === 200 ? 'allow' : 'deny', trace: envelope({ traceparent, request, response, log, notes }) };
+      const extraRequest = { traceparent, accept: null, ...(headers['x-mock-workload-claims'] ? { 'x-mock-workload-claims': headers['x-mock-workload-claims'] } : {}) };
+      const gw = mockTrace({
+        url: `https://${GATEWAY_HOST}${path}`, authorization: maskKeys(headers.authorization), rpc: body, status, body: resBody, headers: resHeaders,
+        requestHeaders: extraRequest, decisions: decisions(), record: log.length ? log.join(' | ') : null,
+      });
+      return { status, headers: resHeaders, body: resBody, verdict: status === 200 ? 'allow' : 'deny', trace: envelope({ traceparent, request, response, log, notes }), gw };
     };
-    const unauthorized = (why) => {
+    const unauthorized = (why, stage = 'authenticated') => {
+      decide(stage, 'fail', `${why}. The 401 does not say which check failed; the gateway log does.`);
       log.push(`auth: rejected (${why})`);
       if (kind === 'llm') return finish(401, { error: { type: 'invalid_request_error', message: 'invalid virtual key' } });
       if (kind === 'mcp') return finish(401, 'Bearer token required', { 'www-authenticate': `Bearer resource_metadata="https://${GATEWAY_HOST}/.well-known/oauth-protected-resource/${app}/mcp"` });
@@ -71,28 +87,34 @@ export function createGateway({ registry, grants, now = () => Date.now() }) {
       if (c.exp <= t) return unauthorized('workload token rejected: token expired');
       if (c.exp - c.iat > (w.MaxTokenLifetimeSec || 3600)) return unauthorized(`workload token rejected: lifetime ${c.exp - c.iat}s exceeds MaxTokenLifetimeSec ${w.MaxTokenLifetimeSec || 3600}`);
       name = hit.name; entry = hit.k;
+      decide('authenticated', 'pass', `workload token matches key ${name}: issuer, audience and subject match, exp and iat are present, lifetime is within ${w.MaxTokenLifetimeSec || 3600}s`);
       log.push(`mcpgw: workload token accepted for key ${name} issuer=${c.iss} subject=${c.sub}`);
       notes.push('Workload-token acceptance on the real gateway is UNVERIFIED (rule workload-gateway-acceptance). Signature checking and JWKS fetching are not simulated.');
     } else {
       const found = registry.authenticate(cred.value);
       if (!found) return unauthorized('unknown key');
       name = found.name; entry = found.k;
+      decide('authenticated', 'pass', `the registry knows this key (${name})`);
     }
     const st = registry.stateOfEntry(entry);
-    if (st !== 'active') return unauthorized(`key ${name} is ${st}`);
+    if (st !== 'active') return unauthorized(`key ${name} is ${st}`, 'state');
+    decide('state', 'pass', `key ${name} is active (not revoked, not expired)`);
 
     // 2. scope: the one self-describing refusal
-    if (!entry.spec.Scopes.includes(kind)) { log.push(`scope: key ${name} lacks ${kind}`); return finish(403, { error: `key not scoped for ${kind} access` }); }
+    if (!entry.spec.Scopes.includes(kind)) { decide('scope', 'fail', `key ${name} lacks the ${kind} scope. The 403 body says so: the one self-describing refusal.`); log.push(`scope: key ${name} lacks ${kind}`); return finish(403, { error: `key not scoped for ${kind} access` }); }
+    decide('scope', 'pass', `key ${name} is scoped for ${kind}`);
 
     // 3. provider/model (llm) or grant (mcp, a2a)
     if (kind === 'llm') {
-      if (entry.spec.Provider !== provider) { log.push(`provider: key ${name} is for ${entry.spec.Provider}, call is for ${provider}`); return finish(403, { error: { type: 'wrong_provider', message: 'key belongs to a different provider' } }); }
-      if (entry.spec.AllowedModels.length && !entry.spec.AllowedModels.includes(model)) { log.push(`model: ${model} not on the allowlist of ${name}`); return finish(403, { error: `model "${model}" not allowed for this key` }); }
+      if (entry.spec.Provider !== provider) { decide('target', 'fail', `key ${name} is for ${entry.spec.Provider}, the call is for ${provider}`); log.push(`provider: key ${name} is for ${entry.spec.Provider}, call is for ${provider}`); return finish(403, { error: { type: 'wrong_provider', message: 'key belongs to a different provider' } }); }
+      if (entry.spec.AllowedModels.length && !entry.spec.AllowedModels.includes(model)) { decide('target', 'fail', `model ${model} is not on the allowlist of ${name}`); log.push(`model: ${model} not on the allowlist of ${name}`); return finish(403, { error: `model "${model}" not allowed for this key` }); }
     } else {
       const g = grants.allowed(name, app, kind === 'mcp' ? tool : '');
-      if (!g.ok) { log.push(`policy denied key=${name} app=${app}${tool ? ` tool=${tool}` : ''} (${g.reason})`); return finish(403, 'Forbidden'); }
+      if (!g.ok) { decide('grant', 'fail', `${name} is not granted ${app}${kind === 'mcp' && tool ? ` / ${tool}` : ''} (${g.reason}). The 403 says only Forbidden; the gateway log says why.`); log.push(`policy denied key=${name} app=${app}${tool ? ` tool=${tool}` : ''} (${g.reason})`); return finish(403, 'Forbidden'); }
+      decide('grant', 'pass', `${name} is granted ${app}${kind === 'mcp' && tool ? ` (tool ${tool})` : ''}`);
       log.push(`policy allowed key=${name} app=${app}`);
     }
+    if (kind === 'llm') decide('target', 'pass', `provider ${provider}${model ? ` and model ${model}` : ''} are allowed for ${name}`);
 
     // 4. caps (measured on llm routes only)
     if (kind === 'llm') {
@@ -108,7 +130,8 @@ export function createGateway({ registry, grants, now = () => Date.now() }) {
       if (rpm && u.calls.length >= rpm) { over = 'RPMLimit'; retry = Math.ceil((WINDOW_MS - (t - u.calls[0])) / 1000); }
       else if (tpm && u.tokens.reduce((s, [, n]) => s + n, 0) + tokens > tpm) { over = 'TPMLimit'; retry = Math.ceil((WINDOW_MS - (t - (u.tokens[0]?.[0] ?? t))) / 1000); }
       else if (budget && u.spendUsd + cost > budget) { over = 'BudgetUSD'; retry = 0; }
-      if (over) { log.push(`caps: ${name} over ${over}`); return finish(429, { error: { type: 'tokens_rate_limit_exceeded', message: `${over} exceeded for this key` } }, retry ? { 'retry-after': String(Math.max(1, retry)) } : {}); }
+      if (over) { decide('caps', 'fail', `${over} exceeded for ${name}`); log.push(`caps: ${name} over ${over}`); return finish(429, { error: { type: 'tokens_rate_limit_exceeded', message: `${over} exceeded for this key` } }, retry ? { 'retry-after': String(Math.max(1, retry)) } : {}); }
+      decide('caps', 'pass', `${name} is within the RPM, TPM and budget caps that are set`);
       if (!input.probe) { u.calls.push(t); u.tokens.push([t, tokens]); u.spendUsd += cost; }
     }
     return finish(200, kind === 'llm' ? { id: 'mock-completion', choices: [{ message: { role: 'assistant', content: 'mock reply' } }] } : { jsonrpc: '2.0', id: 1, result: { ok: true, mock: true } });

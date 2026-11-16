@@ -4,6 +4,7 @@ import Json from "../components/JsonPane.jsx";
 import { HOT } from "../lib/ui.jsx";
 import { advanceClock, gatewayCall } from "../lib/api.js";
 import { maskKey } from "../lib/mask.js";
+import GatewayTrace from "../gateway-trace/GatewayTrace.jsx";
 
 const REASON = { 200: "OK", 400: "Bad Request", 401: "Unauthorized", 403: "Forbidden", 429: "Too Many Requests" };
 const UNKNOWN = "__unknown__";
@@ -123,6 +124,7 @@ function Result({ r }) {
           <p className="small muted">traceparent <code data-testid="traceparent">{t.traceparent}</code></p>
         </div>
       </div>
+      {r.gw && <GatewayTrace exchanges={[{ step: 1, title: `Gateway call: ${r.gw.request.url.replace(/^https:\/\/[^/]+/, "")}`, status: r.status, trace: r.gw }]} source="mock" />}
     </section>
   );
 }

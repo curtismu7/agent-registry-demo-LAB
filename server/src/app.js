@@ -24,6 +24,7 @@ const MAX_ADVANCE_S = 10 * 365 * 86400;
 const NO_REAL = 'Real is not configured: set ARG_GW_URL, ARG_GW_APPS and at least one ARG_GW_KEY_<NAME> in the shared settings file (~/Development/.env, or STANDALONE_ENV). Mock keeps working.';
 
 import { readFileSettings, doorConfig, createRealDoor } from './gatewayReal.js';
+import { traceFromDoor } from './gatewayTrace.js';
 import { setAllowedOrigins } from './netguard.js';
 
 // The environment wins over the file (the family rule): overlay ARG_* variables on the parsed file text.
@@ -33,7 +34,7 @@ export function realDoorFrom(env = process.env) {
   try { text = fs.readFileSync(p, 'utf8'); } catch { /* the environment may still carry the keys */ }
   for (const [k, v] of Object.entries(env)) if (k.startsWith('ARG_GW_') && v) text += `\n${k}=${v}`;
   const cfg = doorConfig(text, 'ARG');
-  return cfg.ok ? createRealDoor({ config: cfg, clientInfo: { name: 'agent-registry-demo', version: '0.2.0' } }) : null;
+  return cfg.ok ? createRealDoor({ config: cfg, clientInfo: { name: 'agent-registry-demo', version: '0.2.0' }, capture: true }) : null;
 }
 
 export function createApp({ health = createHealth(), world: initialWorld = createWorld({ start: Date.now() }), realAvailable = false, customer = loadCustomer(), allowedHosts = new Set() } = {}) {
@@ -90,9 +91,18 @@ export function createApp({ health = createHealth(), world: initialWorld = creat
     const app = String(req.body?.app || door.apps[0]);
     if (!door.apps.includes(app)) return bad(res, `app must be one of ${door.apps.join(', ')}`);
     const caller = req.body?.caller && door.callers.some((c) => c.id === req.body.caller) ? req.body.caller : door.callers[0].id;
-    const listing = await door.list(app, caller);
-    const out = { app, caller, gateway: door.origin, ...(door.version ? { version: door.version } : {}), listing };
-    if (listing.ok) out.refusal = await door.call(app, caller, 'agent_registry_refusal_probe_tool', {});
+    // The hop captures every HTTP exchange (redacted at capture); the card reads the summaries, the "What Privilege did" panel reads `traces`.
+    const exchange = (step, title, rpcMethod, { wire, ...summary }) => {
+      const trace = traceFromDoor({ ...summary, wire }, { rpcMethod });
+      return { summary, ex: { step, title, status: trace.response?.status ?? null, trace } };
+    };
+    const first = exchange(1, 'Gateway check: tools/list', 'tools/list', await door.list(app, caller));
+    const out = { app, caller, gateway: door.origin, ...(door.version ? { version: door.version } : {}), listing: first.summary, traces: [first.ex] };
+    if (first.summary.ok) {
+      const second = exchange(2, 'Refusal probe: tools/call', 'tools/call', await door.call(app, caller, 'agent_registry_refusal_probe_tool', {}));
+      out.refusal = second.summary;
+      out.traces.push(second.ex);
+    }
     res.json(out);
   });
   const send = (res, out) => res.status(out.status).json({ response: out.body, notes: out.notes || [] });

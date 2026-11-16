@@ -15,6 +15,7 @@ Tier: Demo. The life of a non-human identity (an AI agent) in an Agent Registry:
 - Never edit the shared `~/Development/AI-DEMO2` checkout; it is a read-only source.
 - Do not use `crypto.generateKeyPairSync('ec')` or async EC `generateKeyPair` (SIGABRT on Node 20 CI); use `createECDH` + `createPrivateKey`.
 - No AI attribution anywhere (owner, 2026-11-07): no Co-Authored-By trailer and no "Generated with" line in commits, PR bodies or files; CI runs `scripts/check-no-ai-attribution.sh`.
+- What Privilege did (Rule 25, owner 2026-11-15): the shared `GatewayTrace` draws each gateway call under the Gateway tab result and under each `call` step of a Lifecycle story (Mock, from `gw` beside the unchanged text `trace`, built in `server/src/gateway.js` with `mockTrace`; every decision is `checked`, unreached ones `skipped`) and, in Real, `RealGatewayTrace.jsx` runs `POST /api/gateway-check` on a button and draws `traces` (built with `traceFromDoor` from the shared hop's `capture: true`; decisions only `inferred` or `observed`, key shown as its length). The panel and `server/src/gatewayTrace.js` are vendored byte for byte from AI-DEMO-Standalone `shared/gateway-trace/`, pinned by `web/src/gateway-trace/gateway-trace.sha256` and `scripts/gateway-trace.test.mjs`, and never edited here (`trace.js` stays the W3C traceparent helper). Registry admin calls are the Agent Registry simulation, not gateway calls, so they have no panel.
 
 ## Shelf
 `docs/shelf-entry.json` registers this app. Run the parent's `scripts/check-drift.sh <this clone>` before a PR.
