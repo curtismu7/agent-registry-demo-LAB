@@ -96,6 +96,10 @@ Responses from `/api/registry/*` are `{ "response": <wire body>, "notes": [...] 
 | `POST /api/reset` | clear all state |
 | `GET /api/safety-scan` | host and key scan of every shipped story |
 
+## What Privilege did (Rule 25)
+
+Under a Gateway-tab call and under each gateway step of a Lifecycle story, the page shows the exact request, the exact response and the decisions the gateway made in between (authentication, key state, scope, then grant or provider and model and caps). Here the lab's own mock gateway computed every decision, so each is marked *checked*; a check the chain never reached is marked *not reached*. In Real, **Show what Privilege did** runs the gateway check once and shows each HTTP exchange the shared hop captured (the agent key is replaced by its length): the gateway reports no per-check detail, so those decisions are only *inferred* from the status or *observed* in the response. The panel is the shared `GatewayTrace`, vendored byte for byte and pinned by a hash.
+
 ## Mock and Real
 
 Every page header has a **Mock** / **Real** toggle (the pressed button is the current mode). This demo is **Mock only by design**: the registry and the gateway are in-process simulators, and the server calls nothing, so there is no real server for Real to use. `realAvailable` is always `false`, the **Real** button is disabled, and its tooltip says why.
@@ -143,15 +147,15 @@ See [docs/architecture.md](docs/architecture.md), [docs/safety.md](docs/safety.m
 
 ## Real mode: through the PingOne Privilege gateway
 
-Real mode here is one live call through the SE PingOne Privilege gateway
-(`https://mcpgw.ai-demo.ping-devops.com`) with an agent access key from the shared settings
+Real mode here is one live call through the SE PingOne Privilege gateway (its URL is the
+`ARG_GW_URL` value in the shared settings file) with an agent access key from the same settings
 file (`~/Development/.env`, or the file `STANDALONE_ENV` names).
 
 **Privilege objects this lab uses:**
 
 | Object | Value |
 |---|---|
-| Gateway | `mcpgw.ai-demo.ping-devops.com` (cluster `ai-demo-cmuir`) |
+| Gateway | the SE PingOne Privilege gateway: URL from `ARG_GW_URL` in the shared settings file (it runs on the SE cluster) |
 | Door (Agentic App) | `aggregate-limited` — client path `/aggregate-limited/mcp` |
 | Caller | agent access key `ARG_GW_KEY_LAB_AGENT` (write-only, never shown) |
 | Backend | `aggregate` = the gateway's MCP aggregate over `opensearch` (9 tools) + `banking-mcp` (33 tools); `aggregate-limited` = the same members with a tool filter |

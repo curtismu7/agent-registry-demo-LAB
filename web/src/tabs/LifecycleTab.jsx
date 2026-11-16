@@ -4,6 +4,7 @@ import Json from "../components/JsonPane.jsx";
 import { maskDeep } from "../lib/mask.js";
 import { runScenario } from "../lib/api.js";
 import { HOT, RuleNote } from "../lib/ui.jsx";
+import GatewayTrace from "../gateway-trace/GatewayTrace.jsx";
 
 // A story runs in its own fresh mock world (it never touches the live registry on the other tabs), one step at a time.
 export function ScenarioBar({ app }) {
@@ -56,6 +57,7 @@ export function StoryPlayer({ app }) {
               {cur.trace.gatewayLog?.length > 0 && <Inert block text={cur.trace.gatewayLog.join("\n")} testid="step-log" />}
             </details>
           )}
+          {cur.gw && <GatewayTrace exchanges={[{ step: cur.index, title: `Gateway call: ${cur.gw.request.url.replace(/^https:\/\/[^/]+/, "")}`, status: cur.status, trace: cur.gw }]} source="mock" />}
           {!cur.trace && <Json value={maskDeep(cur.body)} label="Step result" testId="step-body" hot={HOT} />}
         </div>
       )}

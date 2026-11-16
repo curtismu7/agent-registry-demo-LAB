@@ -11,7 +11,7 @@ export async function startLive(appOpts = {}) {
   await health.ready;
   const { server, url } = await startHttpServer({ port: 0, host: "127.0.0.1", app: createApp({ health, world: createWorld({ start: Date.UTC(2026, 9, 21, 12, 0, 0) }), ...appOpts }) });
   const base = url.replace(/\/$/, "");
-  globalThis.fetch = (path, init = {}) => realFetch(`${base}${path}`, { ...init, headers: { origin: base, ...(init.headers || {}) } });
+  globalThis.fetch = (path, init = {}) => realFetch(/^https?:/.test(path) ? path : `${base}${path}`, /^https?:/.test(path) ? init : { ...init, headers: { origin: base, ...(init.headers || {}) } });
   const api = async (method, path, body) => {
     const r = await globalThis.fetch(path, { method, headers: body === undefined ? {} : { "content-type": "application/json" }, body: body === undefined ? undefined : JSON.stringify(body) });
     return { status: r.status, data: await r.json() };
