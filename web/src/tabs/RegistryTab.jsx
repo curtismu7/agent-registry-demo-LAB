@@ -16,7 +16,7 @@ export default function RegistryTab({ app }) {
   const warnings = world.warnings.filter((w) => w.type === "dangling" || w.type === "inherited");
   return (
     <>
-      <h2>Agent Registry</h2>
+      <h2><span className="step-num" aria-hidden="true">1</span>Agent Registry</h2>
       <p className="lede" data-admin-only>Each row is one non-human identity: an agent access key. Its scopes, custodian, caps and expiry hang off the key. {cast.custodian} is the custodian for {cast.agent_label}. Everything here is simulated.</p>
       {warnings.length > 0 && (
         <section className="note" role="alert" data-testid="grant-warnings" aria-label="Grant warnings">
@@ -27,7 +27,7 @@ export default function RegistryTab({ app }) {
       )}
       <section className="card" aria-label="Registered agents">
         <div className="controls">
-          <h3>Registered agents ({world.keys.length})</h3>
+      <h3><span className="step-num" aria-hidden="true">2</span>Registered agents ({world.keys.length})</h3>
           <button type="button" className="btn" aria-expanded={open} onClick={() => setOpen(!open)}>{open ? "Close the wizard" : "Register an agent"}</button>
         </div>
         {world.keys.length === 0 ? <p className="muted" data-testid="empty">No agents yet. Register one, or run a story on the Lifecycle tab.</p> : (
@@ -48,8 +48,10 @@ export default function RegistryTab({ app }) {
           </table>
         )}
       </section>
-      {open && <Wizard app={app} onDone={(name) => { setSelected(name); setOpen(false); }} />}
-      {key && <KeyDetail key={key.name} app={app} k={key} />}
+      <div className="duo">
+        {open && <Wizard app={app} onDone={(name) => { setSelected(name); setOpen(false); }} />}
+        {key && <KeyDetail key={key.name} app={app} k={key} />}
+      </div>
     </>
   );
 }
@@ -95,7 +97,7 @@ function Wizard({ app, onDone }) {
   );
   return (
     <form className="card" onSubmit={submit} aria-label="Register an agent" data-testid="wizard">
-      <h3>Register an agent</h3>
+      <h3><span className="step-num" aria-hidden="true">3</span>Register an agent</h3>
       <p className="muted small" data-admin-only>The name is permanent: renaming means delete and recreate, and then the key value changes. The registry mints the key; you never choose it.</p>
       {text("name", "Name (permanent)")}
       <fieldset>
