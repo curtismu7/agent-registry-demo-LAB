@@ -4,7 +4,7 @@ import Json from "../components/JsonPane.jsx";
 import { maskDeep } from "./mask.js";
 
 // The keys that matter in this lab's payloads, stood out on every JSON pane (on top of JsonPane's defaults).
-export const HOT = ["state", "Scopes", "Revoked", "NotAfter", "Custodian", "WorkloadIdentity", "Provider", "AllowedModels", "rule", "message", "type"];
+export const HOT = ["state", "Scopes", "Revoked"];
 
 export const StatePill = ({ state }) => <span className={`pill ${state}`}>{state}</span>;
 
