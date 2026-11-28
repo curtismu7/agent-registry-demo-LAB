@@ -12,6 +12,8 @@ import GatewayTab from "./tabs/GatewayTab.jsx";
 import DiagramTab, { START_BOXES } from "./tabs/DiagramTab.jsx";
 import RawTab from "./tabs/RawTab.jsx";
 import TalkTrackTab from "./tabs/TalkTrackTab.jsx";
+import HelpDialog from "./help-dialog/HelpDialog.jsx";
+import { HELP_SECTIONS } from "./helpContent";
 import TopMenu from "./top-menu/TopMenu.jsx";
 import { setPresenter, initPresenter, presenterOn } from "./presenter.js";
 import PrivilegeCheck from "./privilege-check/PrivilegeCheck.jsx";
@@ -74,6 +76,7 @@ function Shell({ loadError, ready, info, onSelectMode, modeError, catalog, setCa
   const [run, setRun] = useState(null);
   const [scenarioId, setScenarioId] = useState(() => (catalog.scenarios.some((s) => s.id === initialScenario) ? initialScenario : catalog.scenarios[0].id));
   const [running, setRunning] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
   const [runError, setRunError] = useState(null);
   const [cursor, setCursor] = useState(-1);
   const [boxes, setBoxes] = useState(START_BOXES);
@@ -136,7 +139,7 @@ function Shell({ loadError, ready, info, onSelectMode, modeError, catalog, setCa
               theme={{ value: theme === "system" ? "auto" : theme, onChange: setThemePersist }}
               present={{ active: present, onToggle: togglePresent, label: "Present" }}
               talkTrack={{ active: tab === "talk", onToggle: () => go("talk") }}
-              help={{ href: "https://github.com/curtismu7/agent-registry-demo-LAB#readme" }}
+              help={{ onClick: () => setHelpOpen(true), title: "What this lab is, and what is simulated" }}
               version={info?.version || null}
               onReset={resetAll}
             >
@@ -159,6 +162,7 @@ function Shell({ loadError, ready, info, onSelectMode, modeError, catalog, setCa
         <p className="lede" data-admin-only>{fill("{{custodian}} registers {{agent_label}}, grants it to {{app}}, rotates it by replacement and retires it. Switch the persona to change the cast.", cast)}</p>
         <Panel app={app} />
       </main>
+      <HelpDialog isOpen={helpOpen} onClose={() => setHelpOpen(false)} sections={HELP_SECTIONS} docsUrl="https://github.com/curtismu7/agent-registry-demo-LAB#readme" />
     </>
   );
 }
